@@ -5,7 +5,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <!--Tegnsæt utf-8-->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--Mobilskalering-->
     <!--<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"> <!--Dist af Bootstrap-->
     <title>Hyponet</title>
@@ -36,7 +36,6 @@
             padding: 5px;
             width: 450px
         }
-
     </style>
 
 </head>
@@ -63,23 +62,22 @@
 
 
 
+    <script src="https://unpkg.com/neo4j-driver"></script>
 
-    <script src="js/js2neo.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
     <!--Bootstrap og Popper
     <script src="/js/bootstrap.bundle.js"></script>
     -->
     <script type="text/javascript">
-        $(function() {
+        $(function () {
 
 
             //Neo4J
-            var cx = js2neo.open({
-                host: "localhost",
-                user: "neo4j",
-                password: "1234567890",
-                port: 7687
-            });
+         
+            var driver = neo4j.v1.driver(
+                'bolt://localhost',
+                neo4j.v1.auth.basic('neo4j', '1234567890')
+            )
 
 
             //#grundnode
@@ -94,22 +92,65 @@
             function LavEnGrundnode() {
 
                 console.log("Grundnode: " + grundnode.text());
-                cx.run(
-                    "CREATE (n:Root {name:'" + grundnode.text() + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                        onRecord: console.log
-                    }
-                );
+
+                // Create a session to run Cypher statements in.
+                // Note: Always make sure to close sessions when you are done using them!
+                var session = driver.session()
+
+                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                session
+                
+                    .run("CREATE (n:Root {name:{nameParam} }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                        nameParam: grundnode.text()
+                    })
+                    .subscribe({
+                        onNext: function (record) {
+                            console.log(record.get('ID(n)')) //sender ID(n) tilbage til browseren
+                        },
+                        onCompleted: function () {
+                            session.close()
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    })
+
+
+                
             }
+
+
 
             //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
             function LavEnSpecnode() {
 
                 console.log("Uddybning: " + $('.uddybningsnode').text());
-                cx.run(
-                    "CREATE (n:Specification {name:'" + $('.uddybningsnode').text() + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                        onRecord: console.log
-                    }
-                );
+
+
+                // Create a session to run Cypher statements in.
+                // Note: Always make sure to close sessions when you are done using them!
+                var session = driver.session()
+
+                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                session
+
+                    .run("CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                        nameParam: $('.uddybningsnode').text()
+                    })
+                    .subscribe({
+                        onNext: function (record) {
+                            console.log(record.get('ID(n)')) //sender ID(n) tilbage til browseren
+                        },
+                        onCompleted: function () {
+                            session.close()
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    })
+
+
+
             }
 
 
@@ -117,7 +158,7 @@
 
 
             //fjern placeholderteksten i #grundnode p-tag
-            $(".grundnode").mousedown(function() {
+            $(".grundnode").mousedown(function () {
                 if (grundnode.text() === "Skriv noget her") {
                     $("#grundnode").text("") //Fjerner indholdet af #grundnoden p-tag
                     console.log("Eksempelteksten skulle være væk nu")
@@ -132,12 +173,12 @@
 
 
             //hver gang musen slippes
-            $(document).bind("mouseup", function() {
+            $(document).bind("mouseup", function () {
 
 
 
                 //Tjek alle taster i #grundnode
-                $('#grundnode').keypress(function(e) {
+                $('#grundnode').keypress(function (e) {
                     //submit ved ENTER
                     if (e.which == 13) {
 
@@ -154,7 +195,7 @@
 
                 //Tjek alle taster i #uddybningsnode
                 //denne selector skabes dynamisk og findes derfor ikke i ready-funktionen.
-                $('.uddybningsnode').keypress(function(e) {
+                $('.uddybningsnode').keypress(function (e) {
                     //submit ved ENTER
                     if (e.which == 13) {
 
@@ -179,7 +220,7 @@
                 }
 
                 x.Selector = {};
-                x.Selector.getSelected = function() { //kør en funktion på det som musen har markeret
+                x.Selector.getSelected = function () { //kør en funktion på det som musen har markeret
 
                     if (window.getSelection) {
                         tekstenSomBlevMarkeret = window.getSelection();
@@ -199,12 +240,31 @@
 
 
 
-                    //SEND MARKERING TIL NEO4J
-                    cx.run(
-                        "CREATE (n:Selection {name:'" + $.trim(tekstenSomBlevMarkeret) + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            onRecord: console.log("Markeringsnode oprettet")
-                        }
-                    );
+                //SEND MARKERING TIL NEO4J
+
+                    // Create a session to run Cypher statements in.
+                    // Note: Always make sure to close sessions when you are done using them!
+                    var session = driver.session()
+
+                    // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                    session
+
+                        .run("CREATE (n:Selection {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: $.trim(tekstenSomBlevMarkeret)
+                        })
+                        .subscribe({
+                            onNext: function (record) {
+                                console.log(record.get('ID(n)')) //sender ID(n) tilbage til browseren
+                            },
+                            onCompleted: function () {
+                                session.close()
+                            },
+                            onError: function (error) {
+                                console.log(error)
+                            }
+                        })
+
+
 
                     //UDDYBNINGSBOKS ÅBNES
                     var uddybningstag = document.createElement("p"); //opretter et p-tag
