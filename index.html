@@ -72,9 +72,10 @@
     <script type="text/javascript">
         $(function () {
 
-
+            var SpecNoden = {};
             var TilNoden = {};
-            var FraNoden = {};
+            var MarkeringsNoden = {};
+            var GrundNoden = {};
 
             //Neo4J forbindelse med javascript-driver
             var driver = neo4j.v1.driver(
@@ -104,13 +105,13 @@
                         onNext: function (record) {
                             console.log('Grundnode registreret i databasen: ' + record.get(
                                 'n.name')) //Hvad står der i grundnoden
-                            FraNoden = {
+                            GrundNoden = {
                                 NodensCreationTime: record.get('n.creationTime'),
                                 NodensID: record.get('ID(n)'),
                                 NodensName: record.get('n.name'),
                                 NodensLabels: record.get('labels(n)')
                             }
-                            console.log("FraNoden: " + FraNoden.NodensName + " og er en " + FraNoden
+                            console.log("GrundNoden: " + GrundNoden.NodensName + " og er en " + GrundNoden
                                 .NodensLabels) //Viser indhold af objektet
 
 
@@ -127,6 +128,7 @@
 
             };
 
+
             //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
             function LavEnSpecnode() {
 
@@ -140,22 +142,24 @@
                 // Run a Cypher statement, reading the result in a streaming manner as records arrive:
                 session
 
-                    .run(
+                    .run( 
                         "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
                             nameParam: $('.uddybningsnode').last().text()
                         })
                     .subscribe({
                         onNext: function (record) {
-                            TilNoden = {
+                            SpecNoden = {
                                 NodensCreationTime: record.get('n.creationTime'),
                                 NodensID: record.get('ID(n)'),
                                 NodensName: record.get('n.name'),
                                 NodensLabels: record.get('labels(n)')
                             }
-                            console.log("TilNoden: " + TilNoden.NodensName + " og er en " + TilNoden
+                            console.log("SpecNoden: " + SpecNoden.NodensName + " og er en " + SpecNoden
                                 .NodensLabels) //Viser indhold af objektet
                             //Lav en mark-relation til den node der skabte denne SPEC-node
-                            LavEnMarkRel()
+                            LavEnMarkRel() //HUSK HUSK HUSK Denne funktion skal måske flyttes til et andet skopi
+                            //Lav en spec-relation til den uddybende node til markeringen
+                            LavEnSpecRel()
 
                         },
                         onCompleted: function () {
@@ -172,10 +176,12 @@
 
             }
 
-            //Funktion som laver en markering mellem en ROOT/SPEC og en MARK
+            //Funktion som laver en MARK-relation mellem en ROOT og en MARK
             function LavEnMarkRel() {
 
-                console.log("Funktionen LavEnMarkRel køres: " + "FraNodens ID: " + FraNoden.NodensID + " TilNodens ID: " + TilNoden.NodensID);
+                console.log("Funktionen LavEnMarkRel køres: " + "GrundNodens ID: " + GrundNoden.NodensID + " MarkeringsNodens ID: " + MarkeringsNoden.NodensID);
+                console.log(GrundNoden.NodensLabels[0]);
+                console.log(MarkeringsNoden.NodensLabels[0]);
 
 
                 // Create a session to run Cypher statements in.
@@ -184,12 +190,10 @@
 
                 // Run a Cypher statement, reading the result in a streaming manner as records arrive:
                 session
-
                     .run(
-                        "MATCH (n:" + FraNoden.NodensName + " {creationTime:" + FraNoden.NodensCreationTime +
-                        ", name:\"" + FraNoden.NodensLabels +
-                        "\"}) MATCH (l:" + $('.uddybningsnode').last().text() + " {creationTime:" + TilNoden
-                        .NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
+                        "MATCH (n:" + GrundNoden.NodensLabels[0] + " {creationTime:" + GrundNoden.NodensCreationTime +
+                        ", name:\"" + GrundNoden.NodensName +
+                        "\"}) MATCH (l:" + MarkeringsNoden.NodensLabels[0] + " {creationTime:" + MarkeringsNoden.NodensCreationTime + ", name:\"" + MarkeringsNoden.NodensName +
                         "\"}) CREATE (n)-[r:MARK]->(l)")
                     .subscribe({
                         onNext: function () {
@@ -203,6 +207,40 @@
                             console.log(error)
                         }
                     })
+            }
+
+            //Funktion som laver en SPEC-relation mellem MARK og SPEC
+            function LavEnSpecRel(){
+
+                console.log("Funktionen LavEnSpecRel køres: " + "MarkNodens ID: " + MarkeringsNoden.NodensID + " SpecNodens ID: " + SpecNoden.NodensID);
+                console.log(MarkeringsNoden.NodensLabels[0]);
+                console.log(SpecNoden.NodensLabels[0]);
+
+
+                // Create a session to run Cypher statements in.
+                // Note: Always make sure to close sessions when you are done using them!
+                var session = driver.session()
+
+                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                session
+                    .run(
+                        "MATCH (n:" + MarkeringsNoden.NodensLabels[0] + " {creationTime:" + MarkeringsNoden.NodensCreationTime +
+                        ", name:\"" + MarkeringsNoden.NodensName +
+                        "\"}) MATCH (l:" + SpecNoden.NodensLabels[0] + " {creationTime:" + SpecNoden.NodensCreationTime + ", name:\"" + SpecNoden.NodensName +
+                        "\"}) CREATE (n)-[r:SPEC]->(l)")
+                    .subscribe({
+                        onNext: function () {
+                            console.log(
+                                "der er lavet en uddybning") 
+                        },
+                        onCompleted: function () {
+                            //session.close()
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    })
+
             }
 
             //fjern placeholderteksten i #grundnode p-tag
@@ -221,6 +259,7 @@
                 //submit ved ENTER
                 if (e.which == 13 && kunDenEneGang) {
                     //Tillad kun ENTER én gang
+
                     kunDenEneGang = false;
 
                     e.preventDefault()
@@ -240,16 +279,20 @@
                 $('.uddybningsnode').keypress(function (e) {
                     //submit ved ENTER
                     if (e.which == 13) {
-
                         e.preventDefault()
-
                         console.log("ENTER blev trykket inde i #uddybningsnode")
                         //Send input fra Specnode-input på ENTER
                         LavEnSpecnode()
-
+                        
                     }
-
                 });
+
+                //Hvis man klikker på en uddybningsnode, skal SpecNoden-objektet sættes til den
+                //$("#{$NodensID}").on("click", function(){console.log("Specnoden med ID " + SpecNoden.NodensID + "Er blevet aktiveret") })
+                //"MATCH (n) WHERE ID(n) = " + Enellerandennode.NodensID[0] + " RETURN n.creationTime, n.name, ID(n), labels(n)"
+                //HUSK HUSK HUSK
+
+
 
                 var tekstenSomBlevMarkeret = '';
 
@@ -303,7 +346,13 @@
                                 document.getElementById("uddybninger").appendChild(
                                     uddybningstag
                                     ); //lægger p-tagget med teksten til div#uddybninger
-
+                                
+                                MarkeringsNoden = {
+                                NodensCreationTime: record.get('n.creationTime'),
+                                NodensID: record.get('ID(n)'),
+                                NodensName: record.get('n.name'),
+                                NodensLabels: record.get('labels(n)')
+                            }
 
 
                             },
