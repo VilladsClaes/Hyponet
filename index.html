@@ -153,19 +153,20 @@
                                 NodensLabels: record.get('labels(n)')
                             }
                             console.log(TilNoden) //Viser indhold af objektet
+                            //Lav en mark-relation til den node der skabte denne SPEC-node
+                            LavEnMarkRel()
 
                         },
                         onCompleted: function () {
-                            //Lav en mark-relation til den node der skabte denne SPEC-node
-                            LavEnMarkRel()
                             //session.close()
                         },
                         onError: function (error) {
                             console.log(error)
                         }
+                         
                     })
 
-
+             
 
 
             }
@@ -173,7 +174,7 @@
             //Funktion som laver en markering mellem en ROOT/SPEC og en MARK
             function LavEnMarkRel() {
 
-                console.log("Relation: " + "fra: " + FraNoden.NodensID + " til: " + TilNoden.NodensID);
+                console.log("Funktionen LavEnMarkRel: " + "FraNodens ID: " + FraNoden.NodensID + " TilNodens ID: " + TilNoden.NodensID);
 
 
                 // Create a session to run Cypher statements in.
@@ -184,8 +185,10 @@
                 session
 
                     .run(
-                        "MATCH (n:" + FraNoden.NodensName + " {creationTime:" + FraNoden.NodensCreationTime + ", name:\"" + FraNoden.NodensLabels +
-                        "\"}) MATCH (l:"+$('.uddybningsnode').last().text()+" {creationTime:" + TilNoden.NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
+                        "MATCH (n:" + FraNoden.NodensName + " {creationTime:" + FraNoden.NodensCreationTime +
+                        ", name:\"" + FraNoden.NodensLabels +
+                        "\"}) MATCH (l:" + $('.uddybningsnode').last().text() + " {creationTime:" + TilNoden
+                        .NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
                         "\"}) CREATE (n)-[:Mark]->(l)")
                     .subscribe({
                         onNext: function (record) {
@@ -290,14 +293,15 @@
 
                                 //UDDYBNINGSBOKS ÅBNES OG p-tagget tildeles id = ID(n)
                                 var uddybningstag = document.createElement(
-                                "p"); //opretter et p-tag
+                                    "p"); //opretter et p-tag
                                 $(uddybningstag).attr("id", record.get(
-                                'ID(n)')); //tilføjer en id på det oprettede p-tag
+                                    'ID(n)')); //tilføjer en id på det oprettede p-tag
                                 $(uddybningstag).addClass("uddybningsnode"); //CSS-klasse
                                 $(uddybningstag).attr("contenteditable",
                                     "true") //tilføjer contenteditable="true" til p-tagget
                                 document.getElementById("uddybninger").appendChild(
-                                    uddybningstag); //lægger p-tagget med teksten til div#uddybninger
+                                    uddybningstag
+                                    ); //lægger p-tagget med teksten til div#uddybninger
 
 
 
