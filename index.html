@@ -73,22 +73,17 @@
         $(function () {
 
 
+            var TilNoden = {};
+            var FraNoden = {};
+
             //Neo4J forbindelse med javascript-driver
             var driver = neo4j.v1.driver(
                 'bolt://localhost',
-                neo4j.v1.auth.basic('neo4j', '1234567890')
-            )
+                neo4j.v1.auth.basic('neo4j', '1234567890'))
 
-            var FraNoden = {}; 
-            var TilNoden = {};
 
             //#grundnode
             var grundnode = $("#grundnode");
-
-
-
-
-
 
             //Funktion som sender inputværdien fra #grundnode
             function LavEnGrundnode() {
@@ -109,18 +104,19 @@
                         onNext: function (record) {
                             console.log('Grundnode registreret i databasen: ' + record.get(
                                 'n.name')) //Hvad står der i grundnoden
-                            var FraNoden = {
-                                NodensCreationTime : record.get('n.creationTime'),
-                                NodensID : record.get('ID(n)'),
-                                NodensName : record.get('n.name'),
-                                NodensLabels : record.get('labels(n)')
+                            FraNoden = {
+                                NodensCreationTime: record.get('n.creationTime'),
+                                NodensID: record.get('ID(n)'),
+                                NodensName: record.get('n.name'),
+                                NodensLabels: record.get('labels(n)')
                             }
-                            console.log("FraNoden: " + FraNoden.NodensName + " og er en " + FraNoden.NodensLabels) //Viser indhold af objektet
+                            console.log("FraNoden: " + FraNoden.NodensName + " og er en " + FraNoden
+                                .NodensLabels) //Viser indhold af objektet
 
 
                         },
                         onCompleted: function () {
-                            session.close()
+                            // session.close()
                         },
                         onError: function (error) {
                             console.log(error)
@@ -129,9 +125,7 @@
 
 
 
-            }
-
-
+            };
 
             //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
             function LavEnSpecnode() {
@@ -152,32 +146,32 @@
                         })
                     .subscribe({
                         onNext: function (record) {
-                            var TilNoden = {
-                                NodensCreationTime : record.get('n.creationTime'),
-                                NodensID : record.get('ID(n)'),
-                                NodensName : record.get('n.name'),
-                                NodensLabels : record.get('labels(n)')
+                            TilNoden = {
+                                NodensCreationTime: record.get('n.creationTime'),
+                                NodensID: record.get('ID(n)'),
+                                NodensName: record.get('n.name'),
+                                NodensLabels: record.get('labels(n)')
                             }
                             console.log(TilNoden) //Viser indhold af objektet
+
                         },
                         onCompleted: function () {
-                            session.close()
+                            //Lav en mark-relation til den node der skabte denne SPEC-node
+                            LavEnMarkRel()
+                            //session.close()
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
 
-                    //Lav en mark-relation til den node der skabte denne SPEC-node
-                    LavEnMarkRel()
+
+
 
             }
 
-
+            //Funktion som laver en markering mellem en ROOT/SPEC og en MARK
             function LavEnMarkRel() {
-
-
-
 
                 console.log("Relation: " + "fra: " + FraNoden.NodensID + " til: " + TilNoden.NodensID);
 
@@ -190,19 +184,13 @@
                 session
 
                     .run(
-                        "MATCH (n:{nameParam} {creationTime:{timeParam}, name:\"{labelParam}\"}) MATCH (l:{nameParam1} {creationTime:{timeParam1}, name:\"{labelParam1}\"}) CREATE (n)-[:{relationParam}]->(l)", {
-                            nameParam: FraNoden.NodensName(),
-                            timeParam: FraNoden.NodensCreationTime(),
-                            labelParam: FraNoden.NodensLabels(),
-                            nameParam1: TilNoden.NodensName(),
-                            timeParam1: TilNoden.NodensCreationTime(),
-                            labelParam1: TilNoden.NodensLabels(),
-                            relationParam: relationType
-
-                        })
+                        "MATCH (n:" + FraNoden.NodensName + " {creationTime:" + FraNoden.NodensCreationTime + ", name:\"" + FraNoden.NodensLabels +
+                        "\"}) MATCH (l:"+$('.uddybningsnode').last().text()+" {creationTime:" + TilNoden.NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
+                        "\"}) CREATE (n)-[:Mark]->(l)")
                     .subscribe({
                         onNext: function (record) {
-                            console.log("der er lavet en markering") //sender ID(n) tilbage til browseren
+                            console.log(
+                                "der er lavet en markering") //sender ID(n) tilbage til browseren
                         },
                         onCompleted: function () {
                             session.close()
@@ -211,11 +199,7 @@
                             console.log(error)
                         }
                     })
-
-
-
             }
-
 
             //fjern placeholderteksten i #grundnode p-tag
             $(".grundnode").mousedown(function () {
@@ -225,7 +209,6 @@
                 };
 
             });
-
 
             //Tillad tryk på ENTER én gang
             var kunDenEneGang = true;
@@ -245,17 +228,8 @@
             });
 
 
-
-
-
-
-
             //hver gang musen slippes
             $(document).bind("mouseup", function () {
-
-
-
-
 
                 //Tjek alle taster i #uddybningsnode
                 //denne selector skabes dynamisk og findes derfor ikke i ready-funktionen.
@@ -273,10 +247,6 @@
 
                 });
 
-
-
-
-
                 var tekstenSomBlevMarkeret = '';
 
                 if (!window.x) {
@@ -284,7 +254,8 @@
                 }
 
                 x.Selector = {};
-                x.Selector.getSelected = function () { //kør en funktion på det som musen har markeret
+                //kør en funktion på det som musen har markeret
+                x.Selector.getSelected = function () {
 
                     if (window.getSelection) {
                         tekstenSomBlevMarkeret = window.getSelection();
@@ -295,9 +266,6 @@
                     }
                     return tekstenSomBlevMarkeret; //funktionen sender t videre
                 }
-
-
-
 
                 //Hvis der er markeret noget
                 if (x.Selector.getSelected().toString() !=
@@ -319,13 +287,17 @@
                             })
                         .subscribe({
                             onNext: function (record) {
-                                
+
                                 //UDDYBNINGSBOKS ÅBNES OG p-tagget tildeles id = ID(n)
-                                var uddybningstag = document.createElement("p"); //opretter et p-tag
-                                $(uddybningstag).attr("id", record.get('ID(n)')); //tilføjer en id på det oprettede p-tag
+                                var uddybningstag = document.createElement(
+                                "p"); //opretter et p-tag
+                                $(uddybningstag).attr("id", record.get(
+                                'ID(n)')); //tilføjer en id på det oprettede p-tag
                                 $(uddybningstag).addClass("uddybningsnode"); //CSS-klasse
-                                $(uddybningstag).attr("contenteditable","true") //tilføjer contenteditable="true" til p-tagget
-                                document.getElementById("uddybninger").appendChild(uddybningstag); //lægger p-tagget med teksten til div#uddybninger
+                                $(uddybningstag).attr("contenteditable",
+                                    "true") //tilføjer contenteditable="true" til p-tagget
+                                document.getElementById("uddybninger").appendChild(
+                                    uddybningstag); //lægger p-tagget med teksten til div#uddybninger
 
 
 
@@ -338,7 +310,7 @@
                             }
                         })
 
-                    
+
 
 
 
@@ -361,9 +333,6 @@
                     };
 
                 };
-
-
-
             });
 
         });
