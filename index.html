@@ -274,9 +274,12 @@
             //hver gang musen slippes
             $(document).bind("mouseup", function () {
 
+
                 //Tjek alle taster i #uddybningsnode
                 //denne selector skabes dynamisk og findes derfor ikke i ready-funktionen.
                 $('.uddybningsnode').keypress(function (e) {
+                    console.log("ID for denne node er: " + $(this).attr("id"));
+
                     //submit ved ENTER
                     if (e.which == 13) {
                         e.preventDefault()
