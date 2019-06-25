@@ -152,7 +152,8 @@
                                 NodensName: record.get('n.name'),
                                 NodensLabels: record.get('labels(n)')
                             }
-                            console.log(TilNoden) //Viser indhold af objektet
+                            console.log("TilNoden: " + TilNoden.NodensName + " og er en " + TilNoden
+                                .NodensLabels) //Viser indhold af objektet
                             //Lav en mark-relation til den node der skabte denne SPEC-node
                             LavEnMarkRel()
 
@@ -174,7 +175,7 @@
             //Funktion som laver en markering mellem en ROOT/SPEC og en MARK
             function LavEnMarkRel() {
 
-                console.log("Funktionen LavEnMarkRel: " + "FraNodens ID: " + FraNoden.NodensID + " TilNodens ID: " + TilNoden.NodensID);
+                console.log("Funktionen LavEnMarkRel køres: " + "FraNodens ID: " + FraNoden.NodensID + " TilNodens ID: " + TilNoden.NodensID);
 
 
                 // Create a session to run Cypher statements in.
@@ -189,9 +190,9 @@
                         ", name:\"" + FraNoden.NodensLabels +
                         "\"}) MATCH (l:" + $('.uddybningsnode').last().text() + " {creationTime:" + TilNoden
                         .NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
-                        "\"}) CREATE (n)-[:Mark]->(l)")
+                        "\"}) CREATE (n)-[r:MARK]->(l)")
                     .subscribe({
-                        onNext: function (record) {
+                        onNext: function () {
                             console.log(
                                 "der er lavet en markering") //sender ID(n) tilbage til browseren
                         },
