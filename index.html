@@ -48,7 +48,7 @@
 
 
         <div class="grundnode">
-            <p id="grundnode" contenteditable="true">Skriv noget her</p>
+            <p class="redbox" contenteditable="true">Skriv noget her</p>
         </div>
 
         <div id="uddybninger">
@@ -74,7 +74,7 @@
 
             var TilNoden = {};
             var FraNoden = {};
-            var DenNodeViMarkererI = {};
+            var DenNodeViHarGangI;
 
             //Neo4J forbindelse med javascript-driver
             var driver = neo4j.v1.driver(
@@ -83,10 +83,10 @@
 
 
             //#grundnode
-            var grundnode = $("#grundnode");
+            var grundnode = $(".redbox");
 
             //Funktion som sender inputværdien fra #grundnode
-            function LavEnGrundnode() {
+            function LavEnGrundnode(DenRoedeBoks) {
                 // Create a session to run Cypher statements in.
                 // Note: Always make sure to close sessions when you are done using them!
                 var session = driver.session()
@@ -99,16 +99,20 @@
                         })
                     .subscribe({
                         onNext: function (record) {
-                            
+
                             FraNoden = {
                                 NodensCreationTime: record.get('n.creationTime'),
                                 NodensID: record.get('ID(n)'),
                                 NodensName: record.get('n.name'),
                                 NodensLabels: record.get('labels(n)')
                             }
-                            console.log("LavEnGrundnode: " + FraNoden.NodensLabels[0] + " indhold: " + FraNoden.NodensName + "ID: " + FraNoden.NodensID) 
 
+                            DenRoedeBoks.attr("id", FraNoden.NodensID)
 
+                            console.log("LavEnGrundnode: " + FraNoden.NodensLabels[0] + " indhold: " +
+                            FraNoden.NodensName + "ID: " + FraNoden.NodensID)
+
+                            
                         },
                         onCompleted: function () {
                             // session.close()
@@ -124,9 +128,7 @@
 
 
             //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
-            function LavEnSpecnode() {
-
-
+            function LavEnSpecnode(DetViUddyber) {
 
                 // Create a session to run Cypher statements in.
                 // Note: Always make sure to close sessions when you are done using them!
@@ -137,23 +139,24 @@
 
                     .run(
                         "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: $('.uddybningsnode').last().text()
+                            nameParam: DenNodeViHarGangI.text()
                         })
                     .subscribe({
                         onNext: function (record) {
-                            
+
                             FraNoden = {
                                 NodensCreationTime: record.get('n.creationTime'),
                                 NodensID: record.get('ID(n)'),
                                 NodensName: record.get('n.name'),
                                 NodensLabels: record.get('labels(n)')
                             }
-                            console.log("LavEnSpecNode: " + FraNoden.NodensLabels[0] + " indhold: " + FraNoden.NodensName + "ID: " + FraNoden.NodensID) 
-                            //Tildel denne SPEC-node en class = NodensID 
-                            //HUSK HUS HUSK Enhver uddybningsnode skal tildeles ID fra neo4j så man senere kan matche noden i neo4j ud fra dette id ifm at man skal oprette nye markeringer fra den.
-                            $(this).addClass(record.get('ID(n)'))
+                            DetViUddyber.attr("id", FraNoden.NodensID) 
+                            
+                            console.log("LavEnSpecNode: " + FraNoden.NodensLabels[0] + " indhold: " +
+                                FraNoden.NodensName + "ID: " + FraNoden.NodensID)
                             //Lav en spec-relation til den uddybende node til markeringen
                             LavEnSpecRel()
+                            
 
                         },
                         onCompleted: function () {
@@ -171,10 +174,7 @@
             }
 
             //Funktion som laver en MARK-relation mellem en ROOT eller en SPEC og en MARK
-            function LavEnMarkRel() {
-
-                
-
+            function LavEnMarkRel(DenNodeViHarGangI) {
 
                 // Create a session to run Cypher statements in.
                 // Note: Always make sure to close sessions when you are done using them!
@@ -183,18 +183,13 @@
                 // Run a Cypher statement, reading the result in a streaming manner as records arrive:
                 session
                     .run(
-                        "MATCH (n:" + FraNoden.NodensLabels[0] + " {creationTime:" + FraNoden
-                        .NodensCreationTime +
-                        ", name:\"" + FraNoden.NodensName +
-                        "\"}) MATCH (l:" + TilNoden.NodensLabels[0] + " {creationTime:" + TilNoden
-                        .NodensCreationTime + ", name:\"" + TilNoden.NodensName +
-                        "\"}) CREATE (n)-[r:MARK]->(l)")
+                        `MATCH (n) WHERE (n:Specification OR n:Root) AND ID(n) = ${DenNodeViHarGangI.attr("id")}
+                        MATCH (l: ${TilNoden.NodensLabels[0]} {creationTime:${TilNoden
+                        .NodensCreationTime}, name:"${TilNoden.NodensName}"})
+                          CREATE (n)-[r:MARK]->(l)`
+                    )
                     .subscribe({
-                        onNext: function () {
-                            console.log("LavEnMarkRel: " + "Fra " + FraNoden.NodensLabels[0] + " ID: " +
-                    FraNoden.NodensID + " Til " + TilNoden.NodensLabels[0] + " ID: " + TilNoden.NodensID);
-
-                        },
+                        onNext: function () { },
                         onCompleted: function () {
                             //session.close()
                         },
@@ -202,6 +197,9 @@
                             console.log(error)
                         }
                     })
+                console.log("LavEnMarkRel: " + "Fra " + FraNoden.NodensLabels[0] + " ID: " +
+                                FraNoden.NodensID + " Til " + TilNoden.NodensLabels[0] + " ID: " +
+                                TilNoden.NodensID);
             }
 
             //Funktion som laver en SPEC-relation mellem MARK og SPEC
@@ -225,11 +223,12 @@
                         "\"}) CREATE (n)-[r:SPEC]->(l)")
                     .subscribe({
                         onNext: function () {
-                            
+
                         },
                         onCompleted: function () {
                             console.log("LavEnSpecRel: " + "Fra " + TilNoden.NodensLabels[0] + " ID: " +
-                    TilNoden.NodensID + " Til " + FraNoden.NodensLabels[0] + " ID: " + FraNoden.NodensID);
+                                TilNoden.NodensID + " Til " + FraNoden.NodensLabels[0] + " ID: " +
+                                FraNoden.NodensID);
                         },
                         onError: function (error) {
                             console.log(error)
@@ -241,7 +240,7 @@
             //fjern placeholderteksten i #grundnode p-tag
             $(".grundnode").mousedown(function () {
                 if (grundnode.text() === "Skriv noget her") {
-                    $("#grundnode").text("") //Fjerner indholdet af #grundnoden p-tag
+                    $(".redbox").text("") //Fjerner indholdet af #grundnoden p-tag
                     console.log("Placeholder Fjernet ")
                 };
 
@@ -250,7 +249,7 @@
             //Tillad tryk på ENTER én gang
             var kunDenEneGang = true;
             //Tjek alle taster i #grundnode
-            $('#grundnode').keypress(function (e) {
+            $('.redbox').keypress(function (e) {
                 //submit ved ENTER
                 if (e.which == 13 && kunDenEneGang) {
                     //Tillad kun ENTER én gang
@@ -259,17 +258,20 @@
 
                     e.preventDefault()
 
+                    DenNodeViHarGangI = $(this)
+
                     console.log("ENTER i #grundnode")
                     //Send input fra Grundnode-input på ENTER
-                    LavEnGrundnode()
+                    LavEnGrundnode(DenNodeViHarGangI)
                 }
-            });  
+            });
 
-            
+
             //hver gang musen slippes
             $(document).bind("mouseup", function () {
 
                 var tekstenSomBlevMarkeret = '';
+                
 
                 if (!window.x) {
                     x = {};
@@ -290,7 +292,8 @@
                 }
 
                 //Hvis der er markeret noget
-                if (x.Selector.getSelected().toString() !='') { //udfør ikke nedenstående hvis der ikke er markeret noget
+                if (x.Selector.getSelected().toString() !=
+                    '') { //udfør ikke nedenstående hvis der ikke er markeret noget
 
 
 
@@ -310,19 +313,21 @@
                         .subscribe({
                             onNext: function (record) {
 
-                                //UDDYBNINGSBOKS ÅBNES OG p-tagget tildeles id = ID(n)
+                                //UDDYBNINGSBOKS ÅBNES 
                                 var uddybningstag = document.createElement(
                                     "p"); //opretter et p-tag
                                 //$(uddybningstag).attr("id", record.get(
                                 //  'ID(n)')); //tilføjer  id fra markeringsnoden på det oprettede p-tag
                                 $(uddybningstag).addClass("uddybningsnode"); //CSS-klasse
-                                $(uddybningstag).attr("contenteditable","true"); //tilføjer contenteditable="true" til p-tagget
-                                    $()
+                                $(uddybningstag).attr("contenteditable",
+                                "true"); //tilføjer contenteditable="true" til p-tagget
+                                
+
                                 document.getElementById("uddybninger").appendChild(
                                     uddybningstag
                                 ); //lægger p-tagget med teksten til div#uddybninger
-
-
+                                
+                                //MARKERINGSNODEN
                                 TilNoden = {
                                     NodensCreationTime: record.get('n.creationTime'),
                                     NodensID: record.get('ID(n)'),
@@ -351,65 +356,45 @@
                                         .toString()); //fortæller hvad der er blevet markeret
 
                                 };
+                                
+
+                                DenKasseViMarkererI = DenNodeViHarGangI; //HUSK HUSK HUSK det gælder kun for grundnoden. Forsøg at ændre det til den kasse man markerer i, hvadend det er en uddybningsnode eller grundnode
+                                console.log(DenKasseViMarkererI)
+                                
+                                                                
+                                //Lav en mark-relation til den node der skabte denne SPEC-node
+                                LavEnMarkRel(DenKasseViMarkererI)
                             },
                             onError: function (error) {
                                 console.log(error)
                             }
                         })
 
-                
+
 
                 };
 
-//Tjek alle taster i #uddybningsnode
+                //Tjek alle taster i #uddybningsnode
                 //denne selector skabes dynamisk og findes derfor ikke i ready-funktionen.
                 $('.uddybningsnode').keypress(function (e) {
-                    
+
+                    DenNodeViHarGangI = $(this)
 
                     //submit ved ENTER
                     if (e.which == 13) {
                         e.preventDefault()
-                        console.log("ENTER i .uddybningsnode")
+                        console.log("ENTER i .uddybningsnode" + FraNoden.NodensName)
 
-                        //Den gamle Franode skal ændres til den nyoprettede nodes ID
+                        DenNodeViHarGangI = $(this)
+
                         
-                        var session = driver.session()
 
-                        // Run a Cypher statement, reading the result in a streaming manner as records arrive:
-                        session.run(
-                                "MATCH (n) WHERE ID(n) = " + FraNoden.NodensID +
-                                " RETURN n.creationTime, n.name, ID(n), labels(n)")
-                            .subscribe({
-                                onNext: function (record) {
-                                    FraNoden = {
-                                        NodensCreationTime: record.get(
-                                            'n.creationTime'),
-                                        NodensID: record.get('ID(n)'),
-                                        NodensName: record.get('n.name'),
-                                        NodensLabels: record.get('labels(n)')
-                                    }
-                                    console.log("Noden af typen: " + FraNoden
-                                        .NodensLabels[0] + "med indholdet:" +
-                                        FraNoden.NodensName
-                                    ) //Viser indhold af objektet
-
-
-                                },
-                                onCompleted: function () {
-                                    
-                                    //session.close()
-                                },
-                                onError: function (error) {
-                                    console.log(error)
-                                }
-
-                            });
-                            
-                            //Lav en mark-relation til den node der skabte denne SPEC-node
-                            LavEnMarkRel()
-                        //Send input fra Specnode-input på ENTER
-                        LavEnSpecnode()
                         
+
+                        LavEnSpecnode(DenNodeViHarGangI)
+
+
+
 
                     }
                 });
