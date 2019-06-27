@@ -97,9 +97,7 @@
                 session
                     //CYPHER-queries som sendes til neo4j
                     .run(
-                        "CREATE (n:Root {name:{nameParam} }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: grundnode.text()
-                        })
+                        "CREATE (n:Root {name: \""+grundnode.text()+"\" }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)")
                     .subscribe({
                         onNext: function (record) {
                             console.log('Grundnode registreret i databasen: ' + record.get(
@@ -112,16 +110,20 @@
                             }
                             console.log("FraNoden: " + FraNoden.NodensName + " og er en " + FraNoden
                                 .NodensLabels) //Viser indhold af objektet
+                            
 
 
                         },
-                        onCompleted: function () {
+                        onCompleted: function (fraNoden) {
+                            console.log(fraNoden)
                             // session.close()
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
+
+                  
 
 
 
@@ -186,11 +188,7 @@
                 session
 
                     .run(
-                        "MATCH (n:" + FraNoden.NodensName + " {creationTime:" + FraNoden.NodensCreationTime +
-                        ", name:\"" + FraNoden.NodensLabels +
-                        "\"}) MATCH (l:" + $('.uddybningsnode').last().text() + " {creationTime:" + TilNoden
-                        .NodensCreationTime + ", name:\"" + TilNoden.NodensLabels +
-                        "\"}) CREATE (n)-[r:MARK]->(l)")
+                        "MATCH (n:Root) MATCH (l:Selection) WHERE n.name = \""+ FraNoden.NodensName + "\" AND l.name = \""+ TilNoden.NodensName + "\" CREATE (n)-[:Mark]->(l)")
                     .subscribe({
                         onNext: function () {
                             console.log(
