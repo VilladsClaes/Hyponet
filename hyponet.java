@@ -366,6 +366,7 @@ public class NeoDbConnection {
         return hypoNode;
     }
     public void createRelationBetweenTwoNodes(IHypoNode fromNode, IHypoNode toNode, String relationType){
+        
        String statementString = "MATCH (n:" + fromNode.getNodeType().get(0) + " {creationTime:" + fromNode.getTimeStamp() + ", name:\"" + fromNode.getName() +
                 "\"}) MATCH (l:"+toNode.getNodeType().get(0)+
                 " {creationTime:" + toNode.getTimeStamp() + ", name:\"" + toNode.getName() + "\"}) CREATE (n)-[:"+relationType+"]->(l)";
