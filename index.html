@@ -18,7 +18,7 @@
         }
 
 
-        .uddybningsnode {
+        .greenbox p {
             background-color: lightgreen;
             line-height: 1.9em;
             font-size: 16px;
@@ -28,7 +28,7 @@
             width: 450px;
         }
 
-        .grundnode {
+        .redbox p {
             background-color: lightcoral;
             line-height: 1.9em;
             font-size: 16px;
@@ -47,11 +47,11 @@
 
 
 
-        <div class="grundnode">
-            <p class="redbox" contenteditable="true">Skriv noget her</p>
+        <div class="redbox">
+            <p contenteditable="true">Skriv noget her</p>
         </div>
 
-        <div id="uddybninger">
+        <div class="greenbox">
             <!--Her lægges uddybningerne-->
         </div>
 
@@ -67,323 +67,272 @@
     <script type="text/javascript">
         $(function () {
 
-            var Grundnoden = {};
-            var SPECNoden = {};
-            var TilNoden = {};
-            var FraNoden = {};
-            var DenNodeViHarGangI;
-            //Tillad tryk på ENTER én gang
-            var kunDenEneGang = true;
-
+            //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
-            var driver = neo4j.v1.driver('bolt://localhost', neo4j.v1.auth.basic('neo4j', '1234567890'));
+            var driver = neo4j.v1.driver('bolt://localhost', neo4j.v1.auth.basic('neo4j', '123'));
             //Åbn en session
             var session = driver.session()
-
-            //#grundnode
-            var grundnode = $(".redbox");
-
-            //fjern placeholderteksten i #grundnode p-tag
-            $(".grundnode").mousedown(function () {
-                if (grundnode.text() === "Skriv noget her") {
-                    $(".redbox").text("") //Fjerner indholdet af #grundnoden p-tag
+            //Opret et tekstfelt til grundnoder
+            //
+            // SKAL LAVES DYNAMISK!!!!
+            //             
+            var grundnodeTag = $(".redbox");
+            var grundnodetekstfelt = $(".redbox p").first()
+            //fjern placeholderteksten 
+            grundnodeTag.mousedown(function () {
+                if (grundnodetekstfelt.text() === "Skriv noget her") {
+                    grundnodetekstfelt.text("")
                     console.log("Placeholder Fjernet ")
                 };
-
             });
-
-            //Funktion som sender inputværdien fra #grundnode
-            function LavEnGrundnode(DenRoedeBoks) {
+            //Send indhold til neo4j om at oprette en grundnode
+            function LavEnGrundnode() {
                 session
-                    //CYPHER-queries som sendes til neo4j
                     .run(
-                        "CREATE (n:Root {name: \"" + grundnode.text() +
+                        "CREATE (n:Root {name: \"" + grundnodetekstfelt.text() +
                         "\" }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)"
                     )
                     .subscribe({
                         onNext: function (record) {
-
                             GrundNoden = {
-                                NodensCreationTime: record.get('n.creationTime'),
-                                NodensID: record.get('ID(n)'),
-                                NodensName: record.get('n.name'),
-                                NodensLabels: record.get('labels(n)')
+                                GrundNodensCreationTime: record.get('n.creationTime'),
+                                GrundNodensID: record.get('ID(n)'),
+                                GrundNodensName: record.get('n.name'),
+                                GrundNodensLabels: record.get('labels(n)')
                             }
-
-                            DenRoedeBoks.attr("id", GrundNoden.NodensID)
-
-                            console.log("LavEnGrundnode: " + GrundNoden.NodensLabels[0] + " indhold: " +
-                                GrundNoden.NodensName + "ID: " + GrundNoden.NodensID)
-
-
                         },
                         onCompleted: function () {
-                            // session.close()
+                            console.log("LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +
+                                " indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden
+                                .GrundNodensID)
+
+                            HentIDTilGrundnode(GrundNoden)
+                            // session.close()                            
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
+
             };
 
-            //Tjek alle taster i #grundnode
-            $('.redbox').keypress(function (e) {
-                //submit ved ENTER
-                if (e.which == 13 && kunDenEneGang) {
-                    //Tillad kun ENTER én gang
-                    kunDenEneGang = false;
-
-                    e.preventDefault()
-
-                    DenValgteGrundnode = $(this)
-
-                    //Send input fra Grundnode-input på ENTER
-                    LavEnGrundnode(DenValgteGrundnode)
-                    console.log("ENTER i #grundnode " + Grundnoden.NodensID)
-
-                    LavEnMarkering(Grundnoden)
-                }
-            });
-
-            function LavEnUddybningsboks(OprinderFraMarkeringMedID) {
-                //UDDYBNINGSBOKS ÅBNES 
-                var uddybningstag = document.createElement(
-                    "p"); //opretter et p-tag
-                //$(uddybningstag).attr("id", record.get(
-                //  'ID(n)')); //tilføjer  id fra markeringsnoden på det oprettede p-tag
-                $(uddybningstag).addClass("uddybningsnode"); //CSS-klasse
-
-                $(uddybningstag).attr("contenteditable",
-                    "true"); //tilføjer contenteditable="true" til p-tagget
-                $(uddybningstag).addClass(OprinderFraMarkeringMedID)
-
-                document.getElementById("uddybninger").appendChild(
-                    uddybningstag
-                ); //lægger p-tagget med teksten til div#uddybninger
-
-                //Tjek alle taster i #uddybningsnode
-                //denne selector skabes dynamisk og findes derfor ikke i ready-funktionen.
-                $('.uddybningsnode').keypress(function (e) {
-
+            //Skriv i tekstfeltet og Send ved ENTER
+            function SendGrundNodeOnEnter() {
+                var kunDenEneGang = true;
+                grundnodetekstfelt.keypress(function (e) {
 
                     //submit ved ENTER
-                    if (e.which == 13) {
+                    if (e.which == 13 && kunDenEneGang) {
+                        console.log("ENTER i grundnodetekstfeltet")
+                        //Tillad kun ENTER én gang
+                        kunDenEneGang = false;
+
                         e.preventDefault()
 
-                        DenValgteSPECnode = $(this);
-
-                        console.log(DenValgteSPECnode)
-
-                        LavEnSpecnode(DenValgteSPECnode)
-                        console.log("ENTER i .uddybningsnode" + SPECNoden.NodensID)
-
-                        LavEnMarkering(SPECNoden)
-
+                        LavEnGrundnode()
 
                     }
                 });
-
             }
+            //Send grundnode afsted
+            SendGrundNodeOnEnter()
+            //Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
+            function HentIDTilGrundnode(fraGrundnoden) {
+                grundnodetekstfelt.attr("id", fraGrundnoden.GrundNodensID)
+            }
+            //Marker tekst i tekstfeltet
+            function SelectTextFromWindow(event) {
+                var selectedText = '';
+                var NodeWhichIsSelected = event.target.id;
+                if (!window.x) {
+                    x = {};
+                }
+                x.Selector = {};
+                x.Selector.getSelected = function () {
 
+                    if (window.getSelection) {
+                        selectedText = window.getSelection();
+                    } else if (document.getSelection) {
+                        selectedText = document.getSelection();
+                    } else if (document.selection) {
+                        selectedText = document.selection.createRange().text;
+                    }
+                    return selectedText;
+                }
+                //udfør kun hvis der ER markeret noget
+                if (x.Selector.getSelected().toString() != '') {
+                    LavEnMarkNode(selectedText, NodeWhichIsSelected)
+                };
+            }
+            //Opret gule mark-opmærkninger
+            // OG
+            //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet 
+            function SurroundSelectedTextWithMarkTag(MarkNodeID) {
+                var tusch = x.Selector.getSelected();
+                if (document.selection && !window.getSelection) {
+                    tusch.pasteHTML("<mark id=" + MarkNodeID + ">" +
+                        tusch.htmlText +
+                        "</mark>"); //Farv det valgte med tusch
+                    console.log("markeret på: " + tusch.htmlText);
+                } else {
+                    var tusch = tusch.getRangeAt(0)
+                    var newMarkElement = document.createElement("mark");
+                    newMarkElement.setAttribute("id", MarkNodeID);
+                    tusch.surroundContents(newMarkElement)
+                    console.log("markering på: " + tusch.toString());
 
-            //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
-            function LavEnSpecnode(DenGroenneBoks) {
-
-                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                };
+            }
+            //Send indhold til neo4j om at oprette en marknode
+            function LavEnMarkNode(SelectedTextFromWindow, TheIDofTheNodeTheSelectionWasMadeIn) {
                 session
-
                     .run(
-                        "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: DenGroenneBoks.text()
+                        "CREATE (n:Selection {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: $.trim(SelectedTextFromWindow) //Dette bliver til en Mark-node
                         })
                     .subscribe({
                         onNext: function (record) {
-
-                            SPECNoden = {
-                                NodensCreationTime: record.get('n.creationTime'),
-                                NodensID: record.get('ID(n)'),
-                                NodensName: record.get('n.name'),
-                                NodensLabels: record.get('labels(n)')
+                            MARKNoden = {
+                                MarkNodensCreationTime: record.get('n.creationTime'),
+                                MarkNodensID: record.get('ID(n)'),
+                                MarkNodensName: record.get('n.name'),
+                                MarkNodensLabels: record.get('labels(n)')
                             }
-                            DenGroenneBoks.attr("id", SPECNoden.NodensID)
-
-                            console.log("LavEnSpecNode: " + SPECNoden.NodensLabels[0] + " indhold: " +
-                                SPECNoden.NodensName + "ID: " + SPECNoden.NodensID)
-
-                            //Lav en spec-relation til den uddybende node til markeringen
-                            LavEnSpecRel()
-
-
-
-
                         },
                         onCompleted: function () {
-                            //session.close()
+                            SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
+                            LavEnMarkRel(TheIDofTheNodeTheSelectionWasMadeIn, MARKNoden)
                         },
                         onError: function (error) {
                             console.log(error)
                         }
-
                     })
-
-
-
-
             }
+            //Send ved mouseup
 
-            //Funktion som laver en MARK-relation mellem en ROOT eller en SPEC og en MARK
-            function LavEnMarkRel(FraNodeTilMarkering) {
+            $(".greenbox, .redbox").bind("mouseup", function (event) {
+                SelectTextFromWindow(event)
 
-
-
-                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+            });
+            //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
+            function LavEnMarkRel(FraNodensID, TilMarkNode) {
                 session
                     .run(
-                        `MATCH (n) WHERE (n:Specification OR n:Root) AND ID(n) = ${FraNodeTilMarkering.NodensID}
-                        MATCH (l: ${MARKNoden.NodensLabels[0]} {creationTime:${MARKNoden
-                        .NodensCreationTime}, name:"${MARKNoden.NodensName}"})
-                          CREATE (n)-[r:MARK]->(l)`
+                        `MATCH (n) WHERE (n:Specification OR n:Root) AND ID(n) = ${FraNodensID}
+                        MATCH (l: ${TilMarkNode.MarkNodensLabels[0]} {creationTime:${TilMarkNode
+                        .MarkNodensCreationTime}, name:"${TilMarkNode.MarkNodensName}"})
+                        CREATE (n)-[r:MARK]->(l)`
                     )
                     .subscribe({
                         onNext: function () {},
                         onCompleted: function () {
+                            LavEnUddybningsboks(TilMarkNode)
                             //session.close()
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
-                console.log("LavEnMarkRel: " + "Fra " + FraNodeTilMarkering.NodensLabels[0] + " ID: " + FraNodeTilMarkering
-                    .NodensID + " Til " + MARKNoden.NodensLabels[0] + " ID: " + MARKNoden.NodensID);
+                console.log("LavEnMarkRel: " + " ID: " +
+                    FraNodensID + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
+                    .MarkNodensID);
+            }
+            //Opret et tekstfelt til uddybning (som er en specnode)
+            var specnodeTag = $(".greenbox");
+
+            function LavEnUddybningsboks(MarknodenDenKommerFra) {
+                //UDDYBNINGSBOKS ÅBNES 
+                var specnodeParagraf = document.createElement("p");
+
+                $(specnodeParagraf).attr("contenteditable",
+                    "true"); //tilføjer contenteditable="true" til p-tagget
+
+                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0].appendChild(
+                    specnodeParagraf);
+                SendSpecNodeOnEnter(MarknodenDenKommerFra);
             }
 
-            //Funktion som laver en SPEC-relation mellem MARK og SPEC
-            function LavEnSpecRel() {
+            //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
+            //
+            //IKKE LAVET ENDNU!!!
+            //
+            //(GENBRUG) Skriv i tekstfeltet og send ved Enter
+            function SendSpecNodeOnEnter(MarknodenDenKommerFra) {
+                var kunDenEneGang1 = true;
 
-                // Run a Cypher statement, reading the result in a streaming manner as records arrive:
+                $(".greenbox").keypress(function (e) {
+
+
+                    if (e.which == 13 && kunDenEneGang1) {
+                        console.log("ENTER i .uddybningsnode")
+                        kunDenEneGang = false;
+                        e.preventDefault()
+                        LavEnSpecnode(MarknodenDenKommerFra)
+                    }
+                });
+            }
+            //Send indhold til neo4j om at oprette en Spec-node
+            function LavEnSpecnode(FraMarkNoden) {
                 session
                     .run(
-                        "MATCH (n:" + MARKNoden.NodensLabels[0] + " {creationTime:" + MARKNoden
-                        .NodensCreationTime +
-                        ", name:\"" + MARKNoden.NodensName +
-                        "\"}) MATCH (l:" + SPECNoden.NodensLabels[0] + " {creationTime:" + SPECNoden
-                        .NodensCreationTime + ", name:\"" + SPECNoden.NodensName +
-                        "\"}) CREATE (n)-[r:SPEC]->(l)")
+                        "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: $(".greenbox").text()
+                        })
                     .subscribe({
-                        onNext: function () {
+                        onNext: function (record) {
+                            SPECNoden = {
+                                SpecNodensCreationTime: record.get('n.creationTime'),
+                                SpecNodensID: record.get('ID(n)'),
+                                SpecNodensName: record.get('n.name'),
+                                SpecNodensLabels: record.get('labels(n)')
+                            }
 
+                            console.log("LavEnSpecNode: " + SPECNoden.SpecNodensLabels[0] +
+                                " ,indhold: " +
+                                SPECNoden.SpecNodensName + " ,ID: " + SPECNoden.SpecNodensID)
                         },
                         onCompleted: function () {
-                            console.log("LavEnSpecRel: " + "Fra " + MARKNoden.NodensLabels[0] +
-                                " ID: " +
-                                MARKNoden.NodensID + " Til " + SPECNoden.NodensLabels[0] + " ID: " +
-                                SPECNoden.NodensID);
+                            //Lav en spec-relation til den uddybende node til markeringen
+                            HentIDTilSpecnode(SPECNoden)
+                            LavEnSpecRel(FraMarkNoden.MarkNodensID,SPECNoden)
+                            //session.close()
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
-
-
             }
-
-            function LavEnMarkering(GrundEllerSpecNoden) {
-                //hver gang musen slippes
-                $(".uddybningsnode, .redbox").bind("mouseup", function () {
-
-                    var tekstenSomBlevMarkeret = '';
-                    console.log(GrundEllerSpecNoden)
-
-                    
-                    if (!window.x) {
-                        x = {};
-                    }
-
-                    x.Selector = {};
-                    //kør en funktion på det som musen har markeret
-                    x.Selector.getSelected = function () {
-
-                        if (window.getSelection) {
-                            tekstenSomBlevMarkeret = window.getSelection();
-                        } else if (document.getSelection) {
-                            tekstenSomBlevMarkeret = document.getSelection();
-                        } else if (document.selection) {
-                            tekstenSomBlevMarkeret = document.selection.createRange().text;
+            //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
+            function HentIDTilSpecnode(fraSpecnoden) {
+                $(".greenbox p").attr("id", fraSpecnoden.SpecNodensID)
+            }
+            //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
+            function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
+                session
+                    .run(
+                        `MATCH (n) WHERE (n:Selection) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
+                        .SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
+                    )
+                    .subscribe({
+                        onNext: function () {},
+                        onCompleted: function () {},
+                        onError: function (error) {
+                            console.log(error)
                         }
-                        return tekstenSomBlevMarkeret; //funktionen sender t videre
-                    }
-
-                    //Hvis der er markeret noget
-                    //udfør ikke nedenstående hvis der ikke er markeret noget
-                    if (x.Selector.getSelected().toString() != '') {
-                        //SEND MARKERING TIL NEO4J
-
-
-                        // Run a Cypher statement, reading the result in a streaming manner as records arrive:
-                        session
-
-                            .run(
-                                "CREATE (n:Selection {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                                    nameParam: $.trim(
-                                        tekstenSomBlevMarkeret) //Dette bliver til en Mark-node
-                                })
-                            .subscribe({
-                                onNext: function (record) {
-
-                                    //MARKERINGSNODEN
-                                    MARKNoden = {
-                                        NodensCreationTime: record.get('n.creationTime'),
-                                        NodensID: record.get('ID(n)'),
-                                        NodensName: record.get('n.name'),
-                                        NodensLabels: record.get('labels(n)')
-                                    }
+                    })
+                console.log("LavEnSpecRel: " + " ID: " + FraMarkNodensID + " Til ID: " + TilSpecNode
+                    .SpecNodensID);
+            }
+            //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
+            //
+            //IKKE LAVET ENDNU
+            //
+            //(GENBRUG) Send indhold til neo4j om at oprette en grundnode
+            //
+            //IKKE LAVET ENDNU
+            //
 
 
-                                },
-                                onCompleted: function () {
-                                    //OVERSTREGNING
-                                    //Brug overstregningstusch når man slipper musen
-                                    var tusch = x.Selector.getSelected();
-                                    var Markeringen = MARKNoden.NodensID;
-                                    if (document.selection && !window.getSelection) {
-                                        tusch.pasteHTML("<mark id=" + Markeringen + ">" +
-                                            tusch.htmlText +
-                                            "</mark>"); //Farv det valgte med tusch
-                                        console.log("markeret på: " + tusch
-                                            .htmlText); //fortæller hvad der er blevet markeret
-                                    } else {
-                                        var tusch = tusch.getRangeAt(0)
-                                        var nyMarkering = document.createElement("mark");
-                                        nyMarkering.setAttribute("id", Markeringen);
-                                        tusch.surroundContents(nyMarkering)
-                                        console.log("markering på: " + tusch
-                                            .toString()
-                                            ); //fortæller hvad der er blevet markeret
-
-                                    };
-
-                                    LavEnMarkRel(GrundEllerSpecNoden)
-                                    LavEnUddybningsboks(Markeringen)
-
-
-
-                                },
-                                onError: function (error) {
-                                    console.log(error)
-                                }
-                            })
-
-
-
-                    };
-
-
-
-
-
-                });
-
-            };
 
         });
     </script>

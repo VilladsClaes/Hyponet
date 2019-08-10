@@ -339,3 +339,37 @@ class Confetti {
     });
   }, DURATION / 2);
 })();
+
+//Promises er resolved eller rejected
+let p = new Promise((resolve, reject) => {
+  let a = 1+1 //Hvis du ændrer dette ender det i catch
+  if (a == 2){
+    resolve("succes")
+  } else {
+    reject("fejlede")
+  }
+})
+//then kører kun hvis Promise er resolved
+p.then((message) => {console.log("dette er i then " + message)}).catch((message) => {
+  console.log("dette er i catch " + message)
+})
+
+//Array til metoder
+const items = [
+  {name: 'diller',    price: 1 },
+  {name: 'daller',    price: 11 },
+  {name: 'baller',    price: 111 },
+  {name: 'snaps',    price: 2 },
+  {name: 'klaps',    price: 222 },
+  {name: 'haps',    price: 22 },
+  {name: 'um',    price: 3 },
+  {name: 'tum',    price: 33 },
+  {name: 'klum',    price: 333 },
+  {name: 'oink',    price: 4 },
+  {name: 'boink',    price:44 },
+  {name: 'soink',    price:444 },
+]
+
+const filteredItems = items.filter((item) => {return item.price <= 100})
+
+console.log(filteredItems)
