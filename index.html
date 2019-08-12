@@ -270,23 +270,23 @@
             function SendSpecNodeOnEnter(MarknodenDenKommerFra) {
                 var kunDenEneGang1 = true;
 
-                $(".greenbox").keypress(function (e) {
+                $(".greenbox p").keypress(function (e) {
 
 
                     if (e.which == 13 && kunDenEneGang1) {
                         console.log("ENTER i .uddybningsnode")
-                        kunDenEneGang = false;
+                        kunDenEneGang1 = false;
                         e.preventDefault()
-                        LavEnSpecnode(MarknodenDenKommerFra)
+                        LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
                     }
                 });
             }
             //Send indhold til neo4j om at oprette en Spec-node
-            function LavEnSpecnode(FraMarkNoden) {
+            function LavEnSpecnode(FraMarkNoden,CurrentGreenBoxWithKeypress) {
                 session
                     .run(
                         "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: $(".greenbox").text()
+                            nameParam: CurrentGreenBoxWithKeypress.innerText
                         })
                     .subscribe({
                         onNext: function (record) {
@@ -303,7 +303,7 @@
                         },
                         onCompleted: function () {
                             //Lav en spec-relation til den uddybende node til markeringen
-                            HentIDTilSpecnode(SPECNoden)
+                            HentIDTilSpecnode(SPECNoden, CurrentGreenBoxWithKeypress)
                             LavEnSpecRel(FraMarkNoden.MarkNodensID, SPECNoden)
                             //session.close()
                         },
@@ -313,8 +313,8 @@
                     })
             }
             //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
-            function HentIDTilSpecnode(fraSpecnoden) {
-                $(".greenbox p").attr("id", fraSpecnoden.SpecNodensID)
+            function HentIDTilSpecnode(fraSpecnoden, CurrentGreenBoxWithKeypress) {
+                $(CurrentGreenBoxWithKeypress).attr("id", fraSpecnoden.SpecNodensID)
             }
             //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
             function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
