@@ -210,10 +210,20 @@
             }
             //Send ved mouseup
 
-            $(".greenbox, .redbox").bind("mouseup", function (event) {
-                SelectTextFromWindow(event)
+            document.querySelector(".redbox").addEventListener("mouseup", function (e) {
+                SelectTextFromWindow(e)
+                console.log("der er mouseup i .redbox")
+                console.log(e)
 
-            });
+            })
+
+            document.querySelector(".greenbox").addEventListener("mouseup", function (e) {
+                SelectTextFromWindow(e)
+                console.log("der er mouseup i .greenbox")
+                console.log(e)
+
+            })
+            // $(".greenbox, .redbox").bind("mouseup", function (event) {SelectTextFromWindow(event)});
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
             function LavEnMarkRel(FraNodensID, TilMarkNode) {
                 session
@@ -294,7 +304,7 @@
                         onCompleted: function () {
                             //Lav en spec-relation til den uddybende node til markeringen
                             HentIDTilSpecnode(SPECNoden)
-                            LavEnSpecRel(FraMarkNoden.MarkNodensID,SPECNoden)
+                            LavEnSpecRel(FraMarkNoden.MarkNodensID, SPECNoden)
                             //session.close()
                         },
                         onError: function (error) {
