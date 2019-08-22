@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="da">
+<!--Dansk sprogattribut-->
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <!--Tegnsæt utf-8-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--Mobilskalering-->
+    <!--<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"> <!--Dist af Bootstrap-->
+    <title>Hyponet</title>
+    <style type="text/css">
+        /* denne farve erstatter den blå markeringsfarve */
+        ::selection {
+            background: #ffff00;
+            color: #000;
+        }
+
+
+        #uddybningsnode {
+            background-color: lightgreen;
+            line-height: 1.9em;
+            font-size: 16px;
+            margin: 10px;
+            border: 1px #333 solid;
+            padding: 5px;
+            width: 450px;
+        }
+
+        .grundnode{
+            background-color: lightcoral;
+            line-height: 1.9em;
+            font-size: 16px;
+            margin: 10px;
+            border: 1px #333 solid;
+            padding: 5px;
+            width: 450px
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container-fluid">
+
+
+
+        <div class="grundnode">
+            <p id="grundnode" contenteditable="true">Skriv noget her</p>
+        </div>
+
+        <div id="uddybninger">
+            <!--Her lægges uddybningerne-->
+        </div>
+
+
+    </div>
+
+
+   
+
+
+
+
+    <script src="js/js2neo.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <!--Bootstrap og Popper
+    <script src="/js/bootstrap.bundle.js"></script>
+    -->
+    <script type="text/javascript">
+        
+
+        $(function () {
+
+
+            //#grundnode
+            var grundnode = $("#grundnode");
+
+            //#uddybningsnode
+            var uddybningsnode = $("#uddybningsnode");
+
+
+            //Funktion som sender inputværdien fra #grundnode
+            function LavEnGrundnode() {
+
+                console.log("Grundnode: " + grundnode.text());
+                cx.run(
+                    "CREATE (n:Root {name:'" + grundnode.text() + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                        onRecord: console.log
+                    }
+                );
+            }
+
+            //Funktion som sender inputværdien fra #uddybningsnode[+ creationtime fra neo4j]
+            function LavEnSpecnode() {
+
+                console.log("Uddybning: " + $('#uddybningsnode').text());
+                cx.run(
+                    "CREATE (n:Specification {name:'" + uddybningsnode.text() + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                        onRecord: console.log
+                    }
+                );
+            }
+
+            //fjern placeholderteksten i #grundnode p-tag
+            $(".grundnode").mousedown(function () {
+                if (grundnode.text() === "Skriv noget her") {
+                    $("#grundnode").text("") //Fjerner indholdet af #grundnoden p-tag
+                    console.log("Eksempelteksten skulle være væk nu")
+                };
+
+            });
+
+            
+            //Tjek alle taster i #grundnode
+            $('#grundnode').keypress(function (e) {
+               //submit ved ENTER
+                if (e.which == 13) {
+                    
+                    e.preventDefault()
+                    
+                    console.log("ENTER blev trykket inde i #grundnode")
+                    //Send input fra Grundnode-input på ENTER
+                    LavEnGrundnode()
+
+                }
+                
+            });
+
+            //Tjek alle taster i #uddybningsnode
+            $('#uddybningsnode').keypress(function (e) {
+                //submit ved ENTER
+                if (e.which == 13) {
+
+                    e.preventDefault()
+
+                    console.log("ENTER blev trykket inde i #uddybningsnode")
+                    //Send input fra Specnode-input på ENTER
+                    LavEnSpecnode()
+
+                }
+
+            });
+
+
+
+            
+
+            //Neo4J
+            var cx = js2neo.open({
+                host: "localhost",
+                user: "neo4j",
+                password: "1234567890",
+                port: 7687
+            });
+            
+        
+            
+
+            $(document).bind("mouseup", function() { //hver gang musen slippes
+
+
+                var tekstenSomBlevMarkeret = '';
+
+                if (!window.x) {
+                    x = {};
+                }
+
+                x.Selector = {};
+                x.Selector.getSelected = function() { //kør en funktion på det som musen har markeret
+
+                    if (window.getSelection) {
+                        tekstenSomBlevMarkeret = window.getSelection();
+                    } else if (document.getSelection) {
+                        tekstenSomBlevMarkeret = document.getSelection();
+                    } else if (document.selection) {
+                        tekstenSomBlevMarkeret = document.selection.createRange().text;
+                    }
+                    return tekstenSomBlevMarkeret; //funktionen sender t videre
+                }
+
+
+
+                if (x.Selector.getSelected().toString() != '') { //udfør ikke nedenstående hvis der ikke er markeret noget
+
+                    
+
+                    console.log(tekstenSomBlevMarkeret);
+                    //SEND MARKERING TIL NEO4J
+                    cx.run(
+                        "CREATE (n:Selection {name:'" + $.trim(tekstenSomBlevMarkeret) + "'}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            onRecord: console.log
+                        }
+                    );
+
+                    //UDDYBNINGSBOKS ÅBNES
+                    var uddybningstag = document.createElement("p"); //opretter et p-tag                
+                    $(uddybningstag).attr("id","uddybningsnode"); //tilføjer en id på det oprettede p-tag
+                    $(uddybningstag).attr("contenteditable", "true") //tilføjer contenteditable="true" til p-tagget
+                    var ingentekst = document.createTextNode(""); //lægger det markerede tekst i en variabel
+                    uddybningstag.appendChild(ingentekst); //lægger tekst-variablen til det oprettede p-tag
+                    document.getElementById("uddybninger").appendChild(uddybningstag); //lægger p-tagget med teksten til div#uddybninger
+
+                    
+
+                    //OVERSTREGNING
+                    var tusch = x.Selector.getSelected(); //Brug overstregningstusch når man slipper musen
+                        if (document.selection && !window.getSelection) {
+                        tusch.pasteHTML("<mark>" + tusch.htmlText + "</mark>"); //Farv det valgte med tusch
+                        console.log("Markeringsnode: " + tusch.htmlText); //fortæller hvad der er blevet markeret
+                        } else {
+                        var tusch = tusch.getRangeAt(0)
+                        var nyMarkering = document.createElement("mark");
+                        //nyMarkering.setAttribute("class", "markerettekst"); tilføjer en klasse, men det er ikke nødvendigt da der er mark-tagget
+                        tusch.surroundContents(nyMarkering)
+                        console.log("Markeringsnode: " + tusch.toString()); //fortæller hvad der er blevet markeret
+
+                        }
+
+                }
+
+
+
+            });
+
+        })
+    </script>
+</body></html>
