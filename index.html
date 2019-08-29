@@ -67,6 +67,20 @@
     <script type="text/javascript">
         $(function () {
 
+            //Hent tidligere indtastninger fra denne browers localstorage
+            if (localStorage.getItem("indtastninger") != null) {
+                var indtastninger = localStorage.getItem("indtastninger");
+            }
+            //Hent JSON
+            var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
+            //Skriv til localstorage
+            var helehjemmesiden = document.documentElement.innerHTML;
+            localStorage.setItem("indtastninger", helehjemmesiden);
+            //Skriv JSON
+            localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
+
+
+
             //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
             var driver = neo4j.v1.driver('bolt://localhost', neo4j.v1.auth.basic('neo4j', '123'));
