@@ -42,8 +42,11 @@
 </head>
 
 <body>
+    <button id="fjernknap">Tøm vinduet</button>
+    <button id="fyldknap">Fyld vinduet fra sidst</button>
+    <button id="gemknap">Gem denne samtale</button>
 
-    <div class="container-fluid">
+    <div class="container-fluid" id="samtale">
 
 
 
@@ -51,8 +54,8 @@
             <p contenteditable="true">Skriv noget her</p>
         </div>
 
-        <div class="greenbox">
-            <p hidden>Skjult uddybning</p>
+        <div class="greenbox" id="greenbox">
+            <p hidden=hidden>Skjult uddybning</p>
         </div>
 
 
@@ -60,25 +63,53 @@
 
     <script src="https://unpkg.com/neo4j-driver"></script>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <!--Bootstrap og Popper
     <script src="/js/bootstrap.bundle.js"></script>
     -->
     <script type="text/javascript">
         $(function () {
 
-            //Hent tidligere indtastninger fra denne browers localstorage
-            if (localStorage.getItem("indtastninger") != null) {
-                var indtastninger = localStorage.getItem("indtastninger");
-            }
-            //Hent JSON
-            var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
-            //Skriv til localstorage
-            var helehjemmesiden = document.documentElement.innerHTML;
-            localStorage.setItem("indtastninger", helehjemmesiden);
-            //Skriv JSON
-            localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
+            $('body').on('click', '#gemknap', function () {
 
+                GemTilLocalstorage();
+            })
+
+            $('body').on('click', '#fjernknap', function () {
+
+                FjernAltIDOM()
+            })
+            $('body').on('click', '#fyldknap', function () {
+
+                HentAltTilDOM()
+            })
+
+
+            function GemTilLocalstorage() {
+                //Hent tidligere indtastninger fra denne browers localstorage
+                if (localStorage.getItem("indtastninger") != null) {
+                    var indtastninger = localStorage.getItem("indtastninger");
+                }
+                //Hent JSON
+                var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
+                //Skriv til localstorage
+                var helehjemmesiden = document.getElementById("samtale").innerHTML;
+                localStorage.setItem("indtastninger", helehjemmesiden);
+                //Skriv JSON
+                localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
+                //Erstat HTML med det fra localstorage
+            }
+
+
+            function FjernAltIDOM() {
+                document.getElementById("samtale").innerHTML = "";
+            }
+
+            // Retrieve Content
+            function HentAltTilDOM() {
+                document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem("indtastninger"));
+            }
 
 
             //Opret forbindelse til neo4j
@@ -89,10 +120,10 @@
             //Opret et tekstfelt til grundnoder
             //
             // SKAL LAVES DYNAMISK!!!!
-            //             
+            //
             var grundnodeTag = $(".redbox");
             var grundnodetekstfelt = $(".redbox p").first()
-            //fjern placeholderteksten 
+            //fjern placeholderteksten
             grundnodeTag.mousedown(function () {
                 if (grundnodetekstfelt.text() === "Skriv noget her") {
                     grundnodetekstfelt.text("")
@@ -118,10 +149,10 @@
                         onCompleted: function () {
                             console.log("LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +
                                 " indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden
-                                .GrundNodensID)
+                                    .GrundNodensID)
 
                             HentIDTilGrundnode(GrundNoden)
-                            // session.close()                            
+                            // session.close()
                         },
                         onError: function (error) {
                             console.log(error)
@@ -180,7 +211,7 @@
             }
             //Opret gule mark-opmærkninger
             // OG
-            //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet 
+            //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet
             function SurroundSelectedTextWithMarkTag(MarkNodeID) {
                 var tusch = x.Selector.getSelected();
                 if (document.selection && !window.getSelection) {
@@ -225,7 +256,7 @@
 
             //Denne selector tager alle p-tags overalt i .redbox (men der er kun én)
             document.querySelector(".redbox").querySelector("p").addEventListener("mousedown", function (e) {
-               
+
                 console.log("der er mousedown i et p-tag i .redbox")
                 let marktag = e.currentTarget.getElementsByTagName('mark');
 
@@ -242,7 +273,7 @@
             })
             //Denne selector tager alle p-tags overalt i .greenbox (og den skal kun gælde for det enkelte p)
 
-            //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering 
+            //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering
             //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
             document.querySelector(".greenbox").addEventListener("mousedown", function (e) {
                 console.log("der er mousedown i et p-tag i .greenbox")
@@ -280,12 +311,12 @@
                 session
                     .run(
                         `MATCH (n) WHERE (n:Specification OR n:Root) AND ID(n) = ${FraNodensID}
-                        MATCH (l: ${TilMarkNode.MarkNodensLabels[0]} {creationTime:${TilMarkNode
-                        .MarkNodensCreationTime}, name:"${TilMarkNode.MarkNodensName}"})
-                        CREATE (n)-[r:MARK]->(l)`
+                                MATCH (l: ${TilMarkNode.MarkNodensLabels[0]} {creationTime:${TilMarkNode
+                            .MarkNodensCreationTime}, name:"${TilMarkNode.MarkNodensName}"})
+                                CREATE (n)-[r:MARK]->(l)`
                     )
                     .subscribe({
-                        onNext: function () {},
+                        onNext: function () { },
                         onCompleted: function () {
                             LavEnUddybningsboks(TilMarkNode)
                             //session.close()
@@ -296,20 +327,19 @@
                     })
                 console.log("LavEnMarkRel: " + " ID: " +
                     FraNodensID + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
-                    .MarkNodensID);
+                        .MarkNodensID);
             }
-            //Opret et tekstfelt til uddybning (som er en specnode)            
+            //Opret et tekstfelt til uddybning (som er en specnode)
             function LavEnUddybningsboks(MarknodenDenKommerFra) {
-                //UDDYBNINGSBOKS ÅBNES 
+                //UDDYBNINGSBOKS ÅBNES
+
                 var specnodeParagraf = document.createElement("p");
 
                 $(specnodeParagraf).attr("contenteditable",
                     "true"); //tilføjer contenteditable="true" til p-tagget
 
-                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0]
-                specnodetekstfelt.parentNode.insertBefore(specnodeParagraf, specnodetekstfelt.nextSibling);
+                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0].append(specnodeParagraf);
 
-                    
                 SendSpecNodeOnEnter(MarknodenDenKommerFra);
             }
 
@@ -372,11 +402,11 @@
                 session
                     .run(
                         `MATCH (n) WHERE (n:Selection) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
-                        .SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
+                            .SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
                     )
                     .subscribe({
-                        onNext: function () {},
-                        onCompleted: function () {},
+                        onNext: function () { },
+                        onCompleted: function () { },
                         onError: function (error) {
                             console.log(error)
                         }
