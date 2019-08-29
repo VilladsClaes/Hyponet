@@ -52,7 +52,7 @@
         </div>
 
         <div class="greenbox">
-            <!--Her lægges uddybningerne-->
+            <p hidden>Skjult uddybning</p>
         </div>
 
 
@@ -222,8 +222,45 @@
                         }
                     })
             }
-            //Send ved mouseup
 
+            //Denne selector tager alle p-tags overalt i .redbox (men der er kun én)
+            document.querySelector(".redbox").querySelector("p").addEventListener("mousedown", function (e) {
+               
+                console.log("der er mousedown i et p-tag i .redbox")
+                let marktag = e.currentTarget.getElementsByTagName('mark');
+
+                while (marktag.length) {
+                    let parent = marktag[0].parentNode;
+                    while (marktag[0].firstChild) {
+                        parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                    }
+                    parent.removeChild(marktag[0]);
+                    console.log("der er fjernet mark-tag i .redbox")
+
+                }
+
+            })
+            //Denne selector tager alle p-tags overalt i .greenbox (og den skal kun gælde for det enkelte p)
+
+            //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering 
+            //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
+            document.querySelector(".greenbox").addEventListener("mousedown", function (e) {
+                console.log("der er mousedown i et p-tag i .greenbox")
+                let marktag = e.currentTarget.getElementsByTagName('mark');
+
+                while (marktag.length) {
+                    let parent = marktag[0].parentNode;
+                    while (marktag[0].firstChild) {
+                        parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                    }
+                    parent.removeChild(marktag[0]);
+                    console.log("der er fjernet mark-tag i .greenbox")
+
+                }
+
+            })
+
+            //Send ved mouseup
             document.querySelector(".redbox").addEventListener("mouseup", function (e) {
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .redbox")
@@ -261,9 +298,7 @@
                     FraNodensID + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
                     .MarkNodensID);
             }
-            //Opret et tekstfelt til uddybning (som er en specnode)
-            var specnodeTag = $(".greenbox");
-
+            //Opret et tekstfelt til uddybning (som er en specnode)            
             function LavEnUddybningsboks(MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES 
                 var specnodeParagraf = document.createElement("p");
@@ -271,8 +306,10 @@
                 $(specnodeParagraf).attr("contenteditable",
                     "true"); //tilføjer contenteditable="true" til p-tagget
 
-                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0].appendChild(
-                    specnodeParagraf);
+                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0]
+                specnodetekstfelt.parentNode.insertBefore(specnodeParagraf, specnodetekstfelt.nextSibling);
+
+                    
                 SendSpecNodeOnEnter(MarknodenDenKommerFra);
             }
 
@@ -296,7 +333,7 @@
                 });
             }
             //Send indhold til neo4j om at oprette en Spec-node
-            function LavEnSpecnode(FraMarkNoden,CurrentGreenBoxWithKeypress) {
+            function LavEnSpecnode(FraMarkNoden, CurrentGreenBoxWithKeypress) {
                 session
                     .run(
                         "CREATE (n:Specification {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
