@@ -10,6 +10,7 @@
     <!--Mobilskalering-->
     <!--<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"> <!--Dist af Bootstrap-->
     <title>Hyponet</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.ico"/>
     <style type="text/css">
         /* denne farve erstatter den blå markeringsfarve */
         ::selection {
@@ -45,12 +46,15 @@
     <button id="fjernknap">Tøm vinduet</button>
     <button id="fyldknap">Fyld vinduet fra sidst</button>
     <button id="gemknap">Gem denne samtale</button>
+    <button id="NyGrundNodeKnap">Ny kontekst (Ny Grundnode)</button>
+
+
 
     <div class="container-fluid" id="samtale">
 
 
 
-        <div class="redbox">
+        <div class="redbox" id="redbox">
             <p contenteditable="true">Skriv noget her</p>
         </div>
 
@@ -84,6 +88,21 @@
 
                 HentAltTilDOM()
             })
+            $('body').on('click', '#NyGrundNodeKnap', function () { 
+
+                
+                let NytPTag = document.createElement("p");
+                $(NytPTag).attr("contenteditable","true");
+                if (document.getElementsByClassName("redbox")[0] = undefined) {
+                    let NySamtale = document.createElement("div");
+                    NySamtale.attr("id", "samtale");
+                    NySamtale.attr("class", "container-fluid");
+                    document.getElementById("NyGrundNodeKnap").append(NySamtale)
+                }
+                document.getElementsByClassName("redbox")[0].append(NytPTag);
+                SendGrundNodeOnEnter()
+
+            })
 
 
             function GemTilLocalstorage() {
@@ -103,7 +122,9 @@
 
 
             function FjernAltIDOM() {
-                document.getElementById("samtale").innerHTML = "";
+                document.getElementById("redbox").innerHTML = "";
+                document.getElementById("greenbox").innerHTML = "";
+
             }
 
             // Retrieve Content
@@ -122,19 +143,22 @@
             // SKAL LAVES DYNAMISK!!!!
             //
             var grundnodeTag = $(".redbox");
-            var grundnodetekstfelt = $(".redbox p").first()
+            var grundnodetekstfelt = $(".redbox p")
             //fjern placeholderteksten
-            grundnodeTag.mousedown(function () {
+            grundnodeTag.mousedown(function (e) {
                 if (grundnodetekstfelt.text() === "Skriv noget her") {
                     grundnodetekstfelt.text("")
                     console.log("Placeholder Fjernet ")
                 };
+
+               
+
             });
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode() {
                 session
                     .run(
-                        "CREATE (n:Root {name: \"" + grundnodetekstfelt.text() +
+                        "CREATE (n:Root {name: \"" + $(grundnodetekstfelt).text() +
                         "\" }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)"
                     )
                     .subscribe({
@@ -166,6 +190,8 @@
                 var kunDenEneGang = true;
                 grundnodetekstfelt.keypress(function (e) {
 
+
+                    kunDenEneGang ^= true;
                     //submit ved ENTER
                     if (e.which == 13 && kunDenEneGang) {
                         console.log("ENTER i grundnodetekstfeltet")
@@ -245,6 +271,7 @@
                             }
                         },
                         onCompleted: function () {
+                            FjernMarkTag(TheIDofTheNodeTheSelectionWasMadeIn)
                             SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
                             LavEnMarkRel(TheIDofTheNodeTheSelectionWasMadeIn, MARKNoden)
                         },
@@ -254,30 +281,14 @@
                     })
             }
 
-            //Denne selector tager alle p-tags overalt i .redbox (men der er kun én)
-            document.querySelector(".redbox").querySelector("p").addEventListener("mousedown", function (e) {
 
-                console.log("der er mousedown i et p-tag i .redbox")
-                let marktag = e.currentTarget.getElementsByTagName('mark');
 
-                while (marktag.length) {
-                    let parent = marktag[0].parentNode;
-                    while (marktag[0].firstChild) {
-                        parent.insertBefore(marktag[0].firstChild, marktag[0]);
-                    }
-                    parent.removeChild(marktag[0]);
-                    console.log("der er fjernet mark-tag i .redbox")
-
-                }
-
-            })
-            //Denne selector tager alle p-tags overalt i .greenbox (og den skal kun gælde for det enkelte p)
 
             //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering
             //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
-            document.querySelector(".greenbox").addEventListener("mousedown", function (e) {
-                console.log("der er mousedown i et p-tag i .greenbox")
-                let marktag = e.currentTarget.getElementsByTagName('mark');
+            function FjernMarkTag(DenNodeMarkSkalFjernesFra){
+                console.log("der er mousedown i et p-tag")
+                let marktag = document.getElementById(DenNodeMarkSkalFjernesFra).getElementsByTagName('mark');
 
                 while (marktag.length) {
                     let parent = marktag[0].parentNode;
@@ -285,11 +296,13 @@
                         parent.insertBefore(marktag[0].firstChild, marktag[0]);
                     }
                     parent.removeChild(marktag[0]);
-                    console.log("der er fjernet mark-tag i .greenbox")
+                    console.log("der er fjernet mark-tag i p-tag")
 
                 }
+            }
+                         
 
-            })
+                     
 
             //Send ved mouseup
             document.querySelector(".redbox").addEventListener("mouseup", function (e) {
@@ -318,7 +331,7 @@
                     .subscribe({
                         onNext: function () { },
                         onCompleted: function () {
-                            LavEnUddybningsboks(TilMarkNode)
+                            LavEnUddybningsboks(FraNodensID, TilMarkNode)
                             //session.close()
                         },
                         onError: function (error) {
@@ -330,15 +343,26 @@
                         .MarkNodensID);
             }
             //Opret et tekstfelt til uddybning (som er en specnode)
-            function LavEnUddybningsboks(MarknodenDenKommerFra) {
+            function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES
 
-                var specnodeParagraf = document.createElement("p");
+                var NytPTag = document.createElement("p");
 
-                $(specnodeParagraf).attr("contenteditable",
-                    "true"); //tilføjer contenteditable="true" til p-tagget
+                $(NytPTag).attr("contenteditable","true"); //tilføjer contenteditable="true" til p-tagget
 
-                var specnodetekstfelt = document.getElementsByClassName("greenbox")[0].append(specnodeParagraf);
+                var ParentNode = document.getElementById(FraNodensID);
+                var uddybningsnode = document.getElementById("greenbox");
+
+                //Hvis markering foregår i redbox
+                if (ParentNode.parentElement == document.getElementById("redbox")) {
+                    console.log("Uddybningsboks udspringer fra grundnode")
+                    uddybningsnode.append(NytPTag);
+                }
+                else{
+                    $(NytPTag).insertAfter(ParentNode);
+                }
+                
+                
 
                 SendSpecNodeOnEnter(MarknodenDenKommerFra);
             }
@@ -355,7 +379,7 @@
 
 
                     if (e.which == 13 && kunDenEneGang1) {
-                        console.log("ENTER i .uddybningsnode")
+                        console.log("ENTER i .greenbox")
                         kunDenEneGang1 = false;
                         e.preventDefault()
                         LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
