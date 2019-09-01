@@ -10,7 +10,7 @@
     <!--Mobilskalering-->
     <!--<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"> <!--Dist af Bootstrap-->
     <title>Hyponet</title>
-    <link rel="shortcut icon" type="image/png" href="favicon.ico"/>
+    <link rel="shortcut icon" type="image/png" href="favicon.ico" />
     <style type="text/css">
         /* denne farve erstatter den blå markeringsfarve */
         ::selection {
@@ -88,11 +88,11 @@
 
                 HentAltTilDOM()
             })
-            $('body').on('click', '#NyGrundNodeKnap', function () { 
+            $('body').on('click', '#NyGrundNodeKnap', function () {
 
-                
+
                 let NytPTag = document.createElement("p");
-                $(NytPTag).attr("contenteditable","true");
+                $(NytPTag).attr("contenteditable", "true");
                 if (document.getElementsByClassName("redbox")[0] = undefined) {
                     let NySamtale = document.createElement("div");
                     NySamtale.attr("id", "samtale");
@@ -100,7 +100,7 @@
                     document.getElementById("NyGrundNodeKnap").append(NySamtale)
                 }
                 document.getElementsByClassName("redbox")[0].append(NytPTag);
-                SendGrundNodeOnEnter()
+                SendGrundNode()
 
             })
 
@@ -129,7 +129,8 @@
 
             // Retrieve Content
             function HentAltTilDOM() {
-                document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem("indtastninger"));
+                document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem(
+                    "indtastninger"));
             }
 
 
@@ -142,18 +143,11 @@
             //
             // SKAL LAVES DYNAMISK!!!!
             //
-            var grundnodeTag = $(".redbox");
             var grundnodetekstfelt = $(".redbox p")
-            //fjern placeholderteksten
-            grundnodeTag.mousedown(function (e) {
-                if (grundnodetekstfelt.text() === "Skriv noget her") {
-                    grundnodetekstfelt.text("")
-                    console.log("Placeholder Fjernet ")
-                };
+           
 
-               
 
-            });
+
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode() {
                 session
@@ -173,7 +167,7 @@
                         onCompleted: function () {
                             console.log("LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +
                                 " indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden
-                                    .GrundNodensID)
+                                .GrundNodensID)
 
                             HentIDTilGrundnode(GrundNoden)
                             // session.close()
@@ -186,35 +180,51 @@
             };
 
             //Skriv i tekstfeltet og Send ved ENTER
-            function SendGrundNodeOnEnter() {
+            function SendGrundNode() {
+
                 var kunDenEneGang = true;
+
                 grundnodetekstfelt.keypress(function (e) {
-
-
-                    kunDenEneGang ^= true;
                     //submit ved ENTER
                     if (e.which == 13 && kunDenEneGang) {
                         console.log("ENTER i grundnodetekstfeltet")
                         //Tillad kun ENTER én gang
                         kunDenEneGang = false;
-
                         e.preventDefault()
-
                         LavEnGrundnode()
-
                     }
+                });
+
+                grundnodetekstfelt.mousedown(function (e) {
+                    //fjern placeholderteksten
+                    if (grundnodetekstfelt.text() === "Skriv noget her") {
+                    grundnodetekstfelt.text("")
+                    console.log("Placeholder Fjernet ")
+                    };
+                    let grundnodetekstfeltet = e.currentTarget.innerText;
+
+                    if (grundnodetekstfeltet !="" && kunDenEneGang && e.currentTarget.id == "") {
+                        console.log(
+                            "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen"
+                            )
+                        LavEnGrundnode()
+                    }
+
                 });
             }
             //Send grundnode afsted
-            SendGrundNodeOnEnter()
+            SendGrundNode()
             //Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
             function HentIDTilGrundnode(fraGrundnoden) {
                 grundnodetekstfelt.attr("id", fraGrundnoden.GrundNodensID)
             }
+
+
             //Marker tekst i tekstfeltet
             function SelectTextFromWindow(event) {
+
                 var selectedText = '';
-                var NodeWhichIsSelected = event.target.id;
+                var NodeWhichIsSelected = event.target;
                 if (!window.x) {
                     x = {};
                 }
@@ -232,6 +242,9 @@
                 }
                 //udfør kun hvis der ER markeret noget
                 if (x.Selector.getSelected().toString() != '') {
+                    //Send indholdet, hvis man har glemt at trykke ENTER
+
+                    FjernMarkTag(NodeWhichIsSelected)
                     LavEnMarkNode(selectedText, NodeWhichIsSelected)
                 };
             }
@@ -255,7 +268,7 @@
                 };
             }
             //Send indhold til neo4j om at oprette en marknode
-            function LavEnMarkNode(SelectedTextFromWindow, TheIDofTheNodeTheSelectionWasMadeIn) {
+            function LavEnMarkNode(SelectedTextFromWindow, NodeTheSelectionWasMadeIn) {
                 session
                     .run(
                         "CREATE (n:Selection {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
@@ -271,9 +284,8 @@
                             }
                         },
                         onCompleted: function () {
-                            FjernMarkTag(TheIDofTheNodeTheSelectionWasMadeIn)
                             SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
-                            LavEnMarkRel(TheIDofTheNodeTheSelectionWasMadeIn, MARKNoden)
+                            LavEnMarkRel(NodeTheSelectionWasMadeIn.id, MARKNoden)
                         },
                         onError: function (error) {
                             console.log(error)
@@ -286,9 +298,11 @@
 
             //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering
             //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
-            function FjernMarkTag(DenNodeMarkSkalFjernesFra){
-                console.log("der er mousedown i et p-tag")
-                let marktag = document.getElementById(DenNodeMarkSkalFjernesFra).getElementsByTagName('mark');
+            function FjernMarkTag(DenNodeMarkSkalFjernesFra) {
+                console.log("Der prøves at fjerne mark-tag")
+
+                let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.id).getElementsByTagName(
+                    'mark');
 
                 while (marktag.length) {
                     let parent = marktag[0].parentNode;
@@ -300,22 +314,20 @@
 
                 }
             }
-                         
 
-                     
+
+
 
             //Send ved mouseup
             document.querySelector(".redbox").addEventListener("mouseup", function (e) {
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .redbox")
-                console.log(e)
 
             })
 
             document.querySelector(".greenbox").addEventListener("mouseup", function (e) {
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .greenbox")
-                console.log(e)
 
             })
             // $(".greenbox, .redbox").bind("mouseup", function (event) {SelectTextFromWindow(event)});
@@ -329,7 +341,7 @@
                                 CREATE (n)-[r:MARK]->(l)`
                     )
                     .subscribe({
-                        onNext: function () { },
+                        onNext: function () {},
                         onCompleted: function () {
                             LavEnUddybningsboks(FraNodensID, TilMarkNode)
                             //session.close()
@@ -340,7 +352,7 @@
                     })
                 console.log("LavEnMarkRel: " + " ID: " +
                     FraNodensID + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
-                        .MarkNodensID);
+                    .MarkNodensID);
             }
             //Opret et tekstfelt til uddybning (som er en specnode)
             function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
@@ -348,23 +360,23 @@
 
                 var NytPTag = document.createElement("p");
 
-                $(NytPTag).attr("contenteditable","true"); //tilføjer contenteditable="true" til p-tagget
+                $(NytPTag).attr("contenteditable", "true"); //tilføjer contenteditable="true" til p-tagget
 
                 var ParentNode = document.getElementById(FraNodensID);
                 var uddybningsnode = document.getElementById("greenbox");
+                
 
                 //Hvis markering foregår i redbox
                 if (ParentNode.parentElement == document.getElementById("redbox")) {
                     console.log("Uddybningsboks udspringer fra grundnode")
-                    uddybningsnode.append(NytPTag);
-                }
-                else{
+                    uddybningsnode.append(NytPTag)
+                } else {
                     $(NytPTag).insertAfter(ParentNode);
                 }
                 
-                
 
-                SendSpecNodeOnEnter(MarknodenDenKommerFra);
+
+                SendSpecNode(MarknodenDenKommerFra);
             }
 
             //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
@@ -372,19 +384,40 @@
             //IKKE LAVET ENDNU!!!
             //
             //(GENBRUG) Skriv i tekstfeltet og send ved Enter
-            function SendSpecNodeOnEnter(MarknodenDenKommerFra) {
-                var kunDenEneGang1 = true;
+            function SendSpecNode(MarknodenDenKommerFra) {
+                //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
+
+
+                var kunDenEneGang = true;
 
                 $(".greenbox p").keypress(function (e) {
 
 
-                    if (e.which == 13 && kunDenEneGang1) {
+                    if (e.which == 13 && kunDenEneGang) {
                         console.log("ENTER i .greenbox")
-                        kunDenEneGang1 = false;
+                        kunDenEneGang = false;
                         e.preventDefault()
                         LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
                     }
+
                 });
+
+                $(".greenbox p").mousedown(function (e) {
+
+                                       
+                    if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
+                        console.log(
+                            "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
+                            )
+                        LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
+                        kunDenEneGang = false;
+                    }
+
+                });
+
+
+
+
             }
             //Send indhold til neo4j om at oprette en Spec-node
             function LavEnSpecnode(FraMarkNoden, CurrentGreenBoxWithKeypress) {
@@ -429,8 +462,8 @@
                             .SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
                     )
                     .subscribe({
-                        onNext: function () { },
-                        onCompleted: function () { },
+                        onNext: function () {},
+                        onCompleted: function () {},
                         onError: function (error) {
                             console.log(error)
                         }
