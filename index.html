@@ -144,7 +144,7 @@
             // SKAL LAVES DYNAMISK!!!!
             //
             var grundnodetekstfelt = $(".redbox p")
-           
+
 
 
 
@@ -186,7 +186,7 @@
 
                 grundnodetekstfelt.keypress(function (e) {
                     //submit ved ENTER
-                    if (e.which == 13 && kunDenEneGang) {
+                    if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                         console.log("ENTER i grundnodetekstfeltet")
                         //Tillad kun ENTER én gang
                         kunDenEneGang = false;
@@ -198,15 +198,16 @@
                 grundnodetekstfelt.mousedown(function (e) {
                     //fjern placeholderteksten
                     if (grundnodetekstfelt.text() === "Skriv noget her") {
-                    grundnodetekstfelt.text("")
-                    console.log("Placeholder Fjernet ")
+                        grundnodetekstfelt.text("")
+                        console.log("Placeholder Fjernet ")
                     };
+                    FjernMarkTag(e);
                     let grundnodetekstfeltet = e.currentTarget.innerText;
 
-                    if (grundnodetekstfeltet !="" && kunDenEneGang && e.currentTarget.id == "") {
+                    if (grundnodetekstfeltet != "" && kunDenEneGang && e.currentTarget.id == "") {
                         console.log(
                             "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen"
-                            )
+                        )
                         LavEnGrundnode()
                     }
 
@@ -223,6 +224,7 @@
             //Marker tekst i tekstfeltet
             function SelectTextFromWindow(event) {
 
+
                 var selectedText = '';
                 var NodeWhichIsSelected = event.target;
                 if (!window.x) {
@@ -233,18 +235,17 @@
 
                     if (window.getSelection) {
                         selectedText = window.getSelection();
-                    } else if (document.getSelection) {
-                        selectedText = document.getSelection();
-                    } else if (document.selection) {
-                        selectedText = document.selection.createRange().text;
                     }
+                    //  else if (document.getSelection) {
+                    //     selectedText = document.getSelection();
+                    // } else if (document.selection) {
+                    //     selectedText = document.selection.createRange().text;
+                    // }
                     return selectedText;
                 }
                 //udfør kun hvis der ER markeret noget
                 if (x.Selector.getSelected().toString() != '') {
                     //Send indholdet, hvis man har glemt at trykke ENTER
-
-                    FjernMarkTag(NodeWhichIsSelected)
                     LavEnMarkNode(selectedText, NodeWhichIsSelected)
                 };
             }
@@ -299,19 +300,22 @@
             //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering
             //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
             function FjernMarkTag(DenNodeMarkSkalFjernesFra) {
-                console.log("Der prøves at fjerne mark-tag")
-
-                let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.id).getElementsByTagName(
-                    'mark');
-
-                while (marktag.length) {
-                    let parent = marktag[0].parentNode;
-                    while (marktag[0].firstChild) {
-                        parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                console.log("Der tjekkes om noden i forvejen har mark-tag")
+                console.log(DenNodeMarkSkalFjernesFra.currentTarget.childElementCount)
+                if (DenNodeMarkSkalFjernesFra.currentTarget.childElementCount > 0) {
+                    let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.target.id).getElementsByTagName(
+                        'mark');
+                    while (marktag.length) {
+                        let parent = marktag[0].parentNode;
+                        while (marktag[0].firstChild) {
+                            parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                        }
+                        parent.removeChild(marktag[0]);
+                        console.log("der er fjernet mark-tag i p-tag")
                     }
-                    parent.removeChild(marktag[0]);
-                    console.log("der er fjernet mark-tag i p-tag")
-
+                }
+                else{
+                    console.log("Der er ingen mark-tag i denne node")
                 }
             }
 
@@ -319,17 +323,24 @@
 
 
             //Send ved mouseup
-            document.querySelector(".redbox").addEventListener("mouseup", function (e) {
+            $('body').on("mouseup", ".redbox", function (e) {
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .redbox")
-
             })
+            // document.querySelector(".redbox").addEventListener("mouseup", function (e) {
+            //     SelectTextFromWindow(e)
+            //     console.log("der er mouseup i .redbox")
+            // })
 
-            document.querySelector(".greenbox").addEventListener("mouseup", function (e) {
+            $('body').on("mouseup", ".greenbox", function (e) {
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .greenbox")
-
             })
+            // document.querySelector(".greenbox").addEventListener("mouseup", function (e) {
+            //     SelectTextFromWindow(e)
+            //     console.log("der er mouseup i .greenbox")
+
+            // })
             // $(".greenbox, .redbox").bind("mouseup", function (event) {SelectTextFromWindow(event)});
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
             function LavEnMarkRel(FraNodensID, TilMarkNode) {
@@ -364,7 +375,7 @@
 
                 var ParentNode = document.getElementById(FraNodensID);
                 var uddybningsnode = document.getElementById("greenbox");
-                
+
 
                 //Hvis markering foregår i redbox
                 if (ParentNode.parentElement == document.getElementById("redbox")) {
@@ -373,7 +384,7 @@
                 } else {
                     $(NytPTag).insertAfter(ParentNode);
                 }
-                
+
 
 
                 SendSpecNode(MarknodenDenKommerFra);
@@ -393,23 +404,23 @@
                 $(".greenbox p").keypress(function (e) {
 
 
-                    if (e.which == 13 && kunDenEneGang) {
+                    if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                         console.log("ENTER i .greenbox")
                         kunDenEneGang = false;
                         e.preventDefault()
                         LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
+                        e.currentTarget.removeAttribute("contenteditable")
+
                     }
 
                 });
 
-                $(".greenbox p").mousedown(function (e) {
-
-                                       
+                $("body").on("mousedown", ".greenbox p", function (e) {
+                    FjernMarkTag(e);
                     if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
-                        console.log(
-                            "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
-                            )
+                        console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
                         LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
+                        e.currentTarget.removeAttribute("contenteditable")
                         kunDenEneGang = false;
                     }
 
