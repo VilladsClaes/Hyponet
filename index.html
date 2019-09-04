@@ -13,6 +13,12 @@
     <link rel="shortcut icon" type="image/png" href="favicon.ico" />
     <style type="text/css">
         /* denne farve erstatter den blå markeringsfarve */
+        * {
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+
         ::selection {
             background: #ffff00;
             color: #000;
@@ -21,9 +27,8 @@
 
         .greenbox p {
             background-color: lightgreen;
-            /* line-height: 1.9em; */
+            line-height: 1.9em;
             font-size: 16px;
-            margin: 10px;
             border: 1px #333 solid;
             padding: 5px;
             width: 450px;
@@ -31,24 +36,25 @@
 
         .redbox p {
             background-color: lightcoral;
-            /* line-height: 1.9em; */
+            line-height: 1.9em;
             font-size: 16px;
-            margin: 10px;
             border: 1px #333 solid;
             padding: 5px;
             width: 450px
         }
-
+        svg{
+            height: 20px;
+            overflow: visible;
+        }
         .pil {
-      display: block;
-      fill: lightgreen;
-      stroke: #333 ;
-    }
+            fill: lightgreen;
+            stroke: #333;
+        }
     </style>
 
 </head>
 
-<body>
+<body id="body">
     <button id="fjernknap">Tøm vinduet</button>
     <button id="fyldknap">Fyld vinduet fra sidst</button>
     <button id="gemknap">Gem denne samtale</button>
@@ -80,6 +86,14 @@
     -->
     <script type="text/javascript">
         $(function () {
+            //gem musekliks x og y-koordinator
+            $('body').on('click', function (e) {
+                console.log("du har klikket")
+                console.log(e.originalEvent.screenX ) 
+                console.log(e.originalEvent.screenY ) 
+
+            })
+
 
             $('body').on('click', '#gemknap', function () {
 
@@ -99,7 +113,7 @@
 
                 let NytPTag = document.createElement("p");
                 $(NytPTag).attr("contenteditable", "true");
-                
+
                 if (document.getElementsByClassName("redbox")[0] = undefined) {
                     let NySamtale = document.createElement("div");
                     NySamtale.attr("id", "samtale");
@@ -143,7 +157,7 @@
 
             //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
-            var driver = neo4j.v1.driver('bolt://localhost', neo4j.v1.auth.basic('neo4j', '123'));
+            var driver = neo4j.v1.driver('bolt://localhost:11001', neo4j.v1.auth.basic('neo4j', '123'));
             //Åbn en session
             var session = driver.session()
             //Opret et tekstfelt til grundnoder
@@ -391,228 +405,215 @@
                         }
                     });
 
+
+            }
+
+
+
+            //Byg en associations-relation fra Associationsnoden til alle de markeringer med samme indhold
+            function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
+                for (let Markeringer = 0; Markeringer < NoderMedSammeIndhold.length; Markeringer++) {
+                    const MarkeringAtLaveRelationTil = NoderMedSammeIndhold[Markeringer];
+                    //Navnet på den specnode eller grundnode som der er matchet
+                    console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
+                    console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
+                    session
+                        .run(
+                            //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
+                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) MATCH (l:${MarkeringAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${MarkeringAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${MarkeringAtLaveRelationTil.MATCHENDENodensName}"}) CREATE (n)-[:ASS]->(l)`
+                        )
+                        .subscribe({
+                            onNext: function (record) {
+
+                            },
+                            onCompleted: function () {
+                                console.log(
+                                    "Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder"
+                                )
+                            },
+                            onError: function (error) {
+                                console.log(error)
+                            }
+                        })
+                };
+            }
+
+
+            //Lav en Associationsnode            
+            function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold) {
+                session
+                    .run(
+                        "CREATE (n:ASS {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: CurrentMARKNode.MarkNodensName //Dette bliver til en Mark-node
+                        })
+                    .subscribe({
+                        onNext: function (record) {
+                            ASSNoden = {
+                                ASSNodensCreationTime: record.get('n.creationTime'),
+                                ASSNodensID: record.get('ID(n)'),
+                                ASSNodensName: record.get('n.name'),
+                                ASSNodensLabels: record.get('labels(n)')
+                            }
+                        },
+                        onCompleted: function () {
+                            console.log("der er lavet en association")
+                            //Lav ASS-rel til relevante noder
+                            LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    })
+            };
+            //Opret et tekstfelt til uddybning (som er en specnode)
+            function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
+                //UDDYBNINGSBOKS ÅBNES
+
+                var NytPTag = document.createElement("p");
+
+                $(NytPTag).attr("contenteditable", "true"); //tilføjer contenteditable="true" til p-tagget
+
+                var ParentNode = document.getElementById(FraNodensID);
+
+                LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra)
+                SendSpecNode(MarknodenDenKommerFra);
+            }
+
+            //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
+            //
+            function LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra) {
                 
+                var div = document.createElement('div');
+                var html = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra
+                    .MarkNodensID + "' class='pil' points=''/></svg>"
+                div.innerHTML = html;
+                div.appendChild(NytPTag);
+
+                //Hvis markering foregår i redbox
+                if (ParentNode.parentElement == document.getElementById("redbox")) {
+                    console.log("Uddybningsboks udspringer fra grundnode")
+                    document.getElementById("greenbox").append(div)
+                } else {
+                    $(div).insertAfter(ParentNode);
+                }
+
+                //Find markeringen
+                var markering = document.getElementById(MarknodenDenKommerFra.MarkNodensID).getBoundingClientRect()
+                console.log(markering)
+
+                var uddybning = NytPTag.getBoundingClientRect()
+                console.log(NytPTag)
+                console.log(uddybning)
+                //Først sæt: x,y for tekstboks overkant
+                //Andet sæt: x,y for mark-tag
+                //Tredje sæt: x,y for tekstboks overkant
+                var pil = document.getElementById("pilTilMark" + MarknodenDenKommerFra.MarkNodensID);
+                var placeringAfPileBen1 = parseInt(markering.width+5) + "," + parseInt(21)
+                var placeringAfPileSpids = parseInt(markering.x + (markering.width/2)) + "," + parseInt(-10)
+                var placeringAfPileBen2 = parseInt(uddybning.width/4) + "," + parseInt(21)
+                pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " + placeringAfPileBen2);
+                console.log(pil.getAttributeNS(null, "points"))
+
             }
+            //
+            //(GENBRUG) Skriv i tekstfeltet og send ved Enter
+            function SendSpecNode(MarknodenDenKommerFra) {
+                //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
 
 
+                var kunDenEneGang = true;
 
-        //Byg en associations-relation fra Associationsnoden til alle de markeringer med samme indhold
-        function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
-                    for (let Markeringer = 0; Markeringer < NoderMedSammeIndhold.length; Markeringer++) {
-                        const MarkeringAtLaveRelationTil = NoderMedSammeIndhold[Markeringer];
-                        //Navnet på den specnode eller grundnode som der er matchet
-                        console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
-                        console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
-                        session
-                            .run(
-                                //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
-                                `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) MATCH (l:${MarkeringAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${MarkeringAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${MarkeringAtLaveRelationTil.MATCHENDENodensName}"}) CREATE (n)-[:ASS]->(l)`
-                            )
-                            .subscribe({
-                                onNext: function (record) {
-
-                                },
-                                onCompleted: function () {
-                                    console.log("Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder")
-                                },
-                                onError: function (error) {
-                                    console.log(error)
-                                }
-                            })
-                    };
-                }
+                $(".greenbox p").keypress(function (e) {
 
 
-        //Lav en Associationsnode            
-        function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold) {
-            session
-                .run(
-                    "CREATE (n:ASS {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                        nameParam: CurrentMARKNode.MarkNodensName //Dette bliver til en Mark-node
-                    })
-                .subscribe({
-                    onNext: function (record) {
-                        ASSNoden = {
-                            ASSNodensCreationTime: record.get('n.creationTime'),
-                            ASSNodensID: record.get('ID(n)'),
-                            ASSNodensName: record.get('n.name'),
-                            ASSNodensLabels: record.get('labels(n)')
-                        }
-                    },
-                    onCompleted: function () {
-                        console.log("der er lavet en association")
-                        //Lav ASS-rel til relevante noder
-                        LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
-                    },
-                    onError: function (error) {
-                        console.log(error)
+                    if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
+                        console.log("ENTER i .greenbox")
+                        kunDenEneGang = false;
+                        e.preventDefault()
+                        LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
+                        e.currentTarget.removeAttribute("contenteditable")
+
                     }
-                })
-        };
-        //Opret et tekstfelt til uddybning (som er en specnode)
-        function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
-            //UDDYBNINGSBOKS ÅBNES
 
-            var NytPTag = document.createElement("p");
+                });
 
-            $(NytPTag).attr("contenteditable", "true"); //tilføjer contenteditable="true" til p-tagget
+                $("body").on("mousedown", ".greenbox p", function (e) {
+                    FjernMarkTag(e);
+                    if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
+                        console.log(
+                            "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
+                        )
+                        LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
+                        e.currentTarget.removeAttribute("contenteditable")
+                        kunDenEneGang = false;
+                    }
 
-            var ParentNode = document.getElementById(FraNodensID);
-            var uddybningsnode = document.getElementById("greenbox");
+                });
 
 
-            //Hvis markering foregår i redbox
-            if (ParentNode.parentElement == document.getElementById("redbox")) {
-                console.log("Uddybningsboks udspringer fra grundnode")
-                uddybningsnode.append(NytPTag)
-            } else {
-                $(NytPTag).insertAfter(ParentNode);
+
+
             }
+            //Send indhold til neo4j om at oprette en Spec-node
+            function LavEnSpecnode(FraMarkNoden, CurrentGreenBoxWithKeypress) {
+                session
+                    .run(
+                        "CREATE (n:SPEC {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: CurrentGreenBoxWithKeypress.innerText
+                        })
+                    .subscribe({
+                        onNext: function (record) {
+                            SPECNoden = {
+                                SpecNodensCreationTime: record.get('n.creationTime'),
+                                SpecNodensID: record.get('ID(n)'),
+                                SpecNodensName: record.get('n.name'),
+                                SpecNodensLabels: record.get('labels(n)')
+                            }
 
-            LavEnTaleboblePil(NytPTag,FraNodensID, MarknodenDenKommerFra)
-
-
-
-            SendSpecNode(MarknodenDenKommerFra);
-        }
-
-        //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
-        //
-       function LavEnTaleboblePil(NytPTag, FraNodensID, MarknodenDenKommerFra){
-        console.log(NytPTag)
-        console.log(FraNodensID)
-        console.log(MarknodenDenKommerFra)
-        
-    //     <svg>
-    //     <polyline id="pil" class="pil" points="" />
-    //   </svg>
-
-
-       // OpdaterPil();
-
-    // function OpdaterPil() {
-
-
-      //Find markeringen
-      var markering = document.getElementById("50").getBoundingClientRect()
-      console.log(markering)
-
-      var uddybning = document.getElementById("100").getBoundingClientRect()
-      console.log(uddybning)
-      //Først sæt: x,y for tekstboks overkant
-      //Andet sæt: x,y for mark-tag
-      //Tredje sæt: x,y for tekstboks overkant
-      var pil = document.getElementById('pil');
-      var placeringAfPileSpids = parseInt(markering.x + (markering.width / 2)) + "," + parseInt(0)
-      var placeringAfPileBen1 = parseInt(uddybning.height) + "," + parseInt(uddybning.width+100)
-      var placeringAfPileBen2 = parseInt(uddybning.height) + "," + parseInt(uddybning.width)
-      pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " + placeringAfPileBen2);
-      console.log(pil.getAttributeNS(null, "points"))
-
-
-
-    //   setTimeout(OpdaterPil, 1000);
-    // }
-       }
-        //
-        //(GENBRUG) Skriv i tekstfeltet og send ved Enter
-        function SendSpecNode(MarknodenDenKommerFra) {
-            //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
-
-
-            var kunDenEneGang = true;
-
-            $(".greenbox p").keypress(function (e) {
-
-
-                if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
-                    console.log("ENTER i .greenbox")
-                    kunDenEneGang = false;
-                    e.preventDefault()
-                    LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
-                    e.currentTarget.removeAttribute("contenteditable")
-
-                }
-
-            });
-
-            $("body").on("mousedown", ".greenbox p", function (e) {
-                FjernMarkTag(e);
-                if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
-                    console.log(
-                        "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
-                    )
-                    LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget)
-                    e.currentTarget.removeAttribute("contenteditable")
-                    kunDenEneGang = false;
-                }
-
-            });
-
-
-
-
-        }
-        //Send indhold til neo4j om at oprette en Spec-node
-        function LavEnSpecnode(FraMarkNoden, CurrentGreenBoxWithKeypress) {
-            session
-                .run(
-                    "CREATE (n:SPEC {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                        nameParam: CurrentGreenBoxWithKeypress.innerText
-                    })
-                .subscribe({
-                    onNext: function (record) {
-                        SPECNoden = {
-                            SpecNodensCreationTime: record.get('n.creationTime'),
-                            SpecNodensID: record.get('ID(n)'),
-                            SpecNodensName: record.get('n.name'),
-                            SpecNodensLabels: record.get('labels(n)')
+                            console.log("LavEnSpecNode: " + SPECNoden.SpecNodensLabels[0] +
+                                " ,indhold: " +
+                                SPECNoden.SpecNodensName + " ,ID: " + SPECNoden.SpecNodensID)
+                        },
+                        onCompleted: function () {
+                            //Lav en spec-relation til den uddybende node til markeringen
+                            HentIDTilSpecnode(SPECNoden, CurrentGreenBoxWithKeypress)
+                            LavEnSpecRel(FraMarkNoden.MarkNodensID, SPECNoden)
+                            //session.close()
+                        },
+                        onError: function (error) {
+                            console.log(error)
                         }
-
-                        console.log("LavEnSpecNode: " + SPECNoden.SpecNodensLabels[0] +
-                            " ,indhold: " +
-                            SPECNoden.SpecNodensName + " ,ID: " + SPECNoden.SpecNodensID)
-                    },
-                    onCompleted: function () {
-                        //Lav en spec-relation til den uddybende node til markeringen
-                        HentIDTilSpecnode(SPECNoden, CurrentGreenBoxWithKeypress)
-                        LavEnSpecRel(FraMarkNoden.MarkNodensID, SPECNoden)
-                        //session.close()
-                    },
-                    onError: function (error) {
-                        console.log(error)
-                    }
-                })
-        }
-        //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
-        function HentIDTilSpecnode(fraSpecnoden, CurrentGreenBoxWithKeypress) {
-            $(CurrentGreenBoxWithKeypress).attr("id", fraSpecnoden.SpecNodensID)
-        }
-        //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
-        function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
-            session
-                .run(
-                    `MATCH (n) WHERE (n:MARK) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
+                    })
+            }
+            //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
+            function HentIDTilSpecnode(fraSpecnoden, CurrentGreenBoxWithKeypress) {
+                $(CurrentGreenBoxWithKeypress).attr("id", fraSpecnoden.SpecNodensID)
+            }
+            //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
+            function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
+                session
+                    .run(
+                        `MATCH (n) WHERE (n:MARK) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
                             .SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
-                )
-                .subscribe({
-                    onNext: function () {},
-                    onCompleted: function () {},
-                    onError: function (error) {
-                        console.log(error)
-                    }
-                })
-            console.log("LavEnSpecRel: " + " ID: " + FraMarkNodensID + " Til ID: " + TilSpecNode
-                .SpecNodensID);
-        }
-        //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
-        //
-        //IKKE LAVET ENDNU
-        //
-        //(GENBRUG) Send indhold til neo4j om at oprette en grundnode
-        //
-        //IKKE LAVET ENDNU
-        //
+                    )
+                    .subscribe({
+                        onNext: function () {},
+                        onCompleted: function () {},
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    })
+                console.log("LavEnSpecRel: " + " ID: " + FraMarkNodensID + " Til ID: " + TilSpecNode
+                    .SpecNodensID);
+            }
+            //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
+            //
+            //IKKE LAVET ENDNU
+            //
+            //(GENBRUG) Send indhold til neo4j om at oprette en grundnode
+            //
+            //IKKE LAVET ENDNU
+            //
 
 
 
