@@ -8,17 +8,15 @@
     <!--Tegnsæt utf-8-->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--Mobilskalering-->
-    <!--<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"> <!--Dist af Bootstrap-->
     <title>Hyponet</title>
     <link rel="shortcut icon" type="image/png" href="favicon.ico" />
     <style type="text/css">
-        /* denne farve erstatter den blå markeringsfarve */
-        * {
+        *{
             margin: 0;
             padding: 0;
             border: 0;
         }
-
+        /* denne farve erstatter den blå markeringsfarve */
         ::selection {
             background: #ffff00;
             color: #000;
@@ -42,6 +40,17 @@
             padding: 5px;
             width: 450px
         }
+
+        div .purpleparagraf{
+            background-color: rgb(160, 85, 160);
+            line-height: 1.9em;
+            font-size: 16px;
+            border: 1px #333 solid;
+            margin: 10px;
+            padding: 5px;
+            width: 450px
+        }
+
         svg{
             height: 20px;
             overflow: visible;
@@ -308,7 +317,7 @@
                         onCompleted: function () {
                             SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
                             LavEnMarkRel(NodeTheSelectionWasMadeIn.id, MARKNoden)
-                            TjekAndreSPECEllerGRUNDNoderForMARK(MARKNoden)
+                            TjekAndreSPECEllerGRUNDNoderForMARK(MARKNoden, NodeTheSelectionWasMadeIn)
                         },
                         onError: function (error) {
                             console.log(error)
@@ -372,7 +381,7 @@
                     .MarkNodensID);
             };
 
-            function TjekAndreSPECEllerGRUNDNoderForMARK(CurrentMARKNode) {
+            function TjekAndreSPECEllerGRUNDNoderForMARK(CurrentMARKNode, FraNoden) {
                 //Gem de rodnoder og specnoder der indeholder denne markering
                 var NoderMedSammeIndhold = []
 
@@ -396,7 +405,8 @@
                             console.log(NoderMedSammeIndhold)
                             //Lav en association hvis der er flere end én fundne
                             if (NoderMedSammeIndhold.length >= 1) {
-                                LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold)
+
+                                LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden)
                             }
                             //session.close()
                         },
@@ -420,16 +430,14 @@
                     session
                         .run(
                             //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
-                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) MATCH (l:${MarkeringAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${MarkeringAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${MarkeringAtLaveRelationTil.MATCHENDENodensName}"}) CREATE (n)-[:ASS]->(l)`
+                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) MATCH (l:${MarkeringAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${MarkeringAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${MarkeringAtLaveRelationTil.MATCHENDENodensName}"}) MERGE (n)-[:ASS]->(l)`
                         )
                         .subscribe({
                             onNext: function (record) {
 
                             },
                             onCompleted: function () {
-                                console.log(
-                                    "Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder"
-                                )
+                                console.log("Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder")
                             },
                             onError: function (error) {
                                 console.log(error)
@@ -440,11 +448,11 @@
 
 
             //Lav en Associationsnode            
-            function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold) {
+            function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden) {
                 session
                     .run(
-                        "CREATE (n:ASS {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: CurrentMARKNode.MarkNodensName //Dette bliver til en Mark-node
+                        "MERGE (n:ASS {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+                            nameParam: CurrentMARKNode.MarkNodensName 
                         })
                     .subscribe({
                         onNext: function (record) {
@@ -459,20 +467,45 @@
                             console.log("der er lavet en association")
                             //Lav ASS-rel til relevante noder
                             LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
+                            LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
+
+                            
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
             };
+             //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
+             function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
+                //Outputboks ÅBNES
+                var NytPTag = document.createElement("p");
+                $(NytPTag).attr("id", ASSNoden.ASSNodensID)
+                $(NytPTag).attr("class", "purpleparagraf")
+                $(NytPTag).attr("contenteditable", "true"); 
+                NytPTag.innerText = NoderMedSammeIndhold[0].MATCHENDENodensName;
+                console.log("nu bliver der lavet en associationsboks")
+
+                var ParentNode = document.getElementById(FraNoden.id);
+
+                if (ParentNode.parentElement == document.getElementById("redbox")) {
+                    var nyOutputBoks = document.createElement("div")
+                    $(nyOutputBoks).attr("class", "purpleboks")
+                    console.log("output udspringer fra grundnode")
+                    nyOutputBoks.append(NytPTag)
+                } else {
+                    $(NytPTag).insertAfter(ParentNode);
+                }
+
+            }
+        
             //Opret et tekstfelt til uddybning (som er en specnode)
             function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES
 
                 var NytPTag = document.createElement("p");
-
-                $(NytPTag).attr("contenteditable", "true"); //tilføjer contenteditable="true" til p-tagget
-
+                $(NytPTag).attr("contenteditable", "true"); 
+                console.log("Uddybningsboks udspringer fra "+ MarknodenDenKommerFra.MarkNodensName)
                 var ParentNode = document.getElementById(FraNodensID);
 
                 LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra)
@@ -614,6 +647,7 @@
             //
             //IKKE LAVET ENDNU
             //
+           
 
 
 
