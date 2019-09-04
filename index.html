@@ -21,7 +21,7 @@
 
         .greenbox p {
             background-color: lightgreen;
-            line-height: 1.9em;
+            /* line-height: 1.9em; */
             font-size: 16px;
             margin: 10px;
             border: 1px #333 solid;
@@ -31,13 +31,19 @@
 
         .redbox p {
             background-color: lightcoral;
-            line-height: 1.9em;
+            /* line-height: 1.9em; */
             font-size: 16px;
             margin: 10px;
             border: 1px #333 solid;
             padding: 5px;
             width: 450px
         }
+
+        .pil {
+      display: block;
+      fill: lightgreen;
+      stroke: #333 ;
+    }
     </style>
 
 </head>
@@ -93,6 +99,7 @@
 
                 let NytPTag = document.createElement("p");
                 $(NytPTag).attr("contenteditable", "true");
+                
                 if (document.getElementsByClassName("redbox")[0] = undefined) {
                     let NySamtale = document.createElement("div");
                     NySamtale.attr("id", "samtale");
@@ -462,6 +469,8 @@
                 $(NytPTag).insertAfter(ParentNode);
             }
 
+            LavEnTaleboblePil(NytPTag,FraNodensID, MarknodenDenKommerFra)
+
 
 
             SendSpecNode(MarknodenDenKommerFra);
@@ -469,7 +478,41 @@
 
         //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
         //
-        //IKKE LAVET ENDNU!!!
+       function LavEnTaleboblePil(NytPTag, FraNodensID, MarknodenDenKommerFra){
+        console.log(NytPTag)
+        console.log(FraNodensID)
+        console.log(MarknodenDenKommerFra)
+    //     <svg>
+    //     <polyline id="pil" class="pil" points="" />
+    //   </svg>
+
+
+       // OpdaterPil();
+
+    // function OpdaterPil() {
+
+
+      //Find markeringen
+      var markering = document.getElementById("50").getBoundingClientRect()
+      console.log(markering)
+
+      var uddybning = document.getElementById("100").getBoundingClientRect()
+      console.log(uddybning)
+      //Først sæt: x,y for tekstboks overkant
+      //Andet sæt: x,y for mark-tag
+      //Tredje sæt: x,y for tekstboks overkant
+      var pil = document.getElementById('pil');
+      var placeringAfPileSpids = parseInt(markering.x + (markering.width / 2)) + "," + parseInt(0)
+      var placeringAfPileBen1 = parseInt(uddybning.height) + "," + parseInt(uddybning.width+100)
+      var placeringAfPileBen2 = parseInt(uddybning.height) + "," + parseInt(uddybning.width)
+      pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " + placeringAfPileBen2);
+      console.log(pil.getAttributeNS(null, "points"))
+
+
+
+    //   setTimeout(OpdaterPil, 1000);
+    // }
+       }
         //
         //(GENBRUG) Skriv i tekstfeltet og send ved Enter
         function SendSpecNode(MarknodenDenKommerFra) {
