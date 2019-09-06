@@ -467,9 +467,7 @@
                             console.log("der er lavet en association")
                             //Lav ASS-rel til relevante noder
                             LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
-                            LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
-
-                            
+                            LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)                            
                         },
                         onError: function (error) {
                             console.log(error)
@@ -502,12 +500,14 @@
             //Opret et tekstfelt til uddybning (som er en specnode)
             function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES
-
+                //Først, lav et p-element
                 var NytPTag = document.createElement("p");
+                //Dernæst, giv attributter til det
                 $(NytPTag).attr("contenteditable", "true"); 
                 console.log("Uddybningsboks udspringer fra "+ MarknodenDenKommerFra.MarkNodensName)
+                //Dernæst, find det element som det nye p-element skal ligge efter
                 var ParentNode = document.getElementById(FraNodensID);
-
+                //Denne funktion laver en svg og lægger den foran det nye p-element
                 LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra)
                 SendSpecNode(MarknodenDenKommerFra);
             }
@@ -515,19 +515,21 @@
             //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
             //
             function LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra) {
-                
-                var div = document.createElement('div');
-                var html = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra
-                    .MarkNodensID + "' class='pil' points=''/></svg>"
-                div.innerHTML = html;
-                div.appendChild(NytPTag);
+                //Lav en omgivende ramme
+                var svgramme = document.createElement('div');
+                //Definér det der skal indsættes
+                var svghtml = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra.MarkNodensID + "' class='pil' points=''/></svg>"
+                //indsæt element i omgivende ramme
+                svgramme.innerHTML = svghtml;
+                //indsæt p-elementet fra LavEnUddybningsboks til denne svg
+                svgramme.appendChild(NytPTag);
 
                 //Hvis markering foregår i redbox
                 if (ParentNode.parentElement == document.getElementById("redbox")) {
                     console.log("Uddybningsboks udspringer fra grundnode")
-                    document.getElementById("greenbox").append(div)
+                    document.getElementById("greenbox").append(svgramme)
                 } else {
-                    $(div).insertAfter(ParentNode);
+                    $(svgramme).insertAfter(ParentNode);
                 }
 
                 //Find markeringen
