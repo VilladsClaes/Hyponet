@@ -11,11 +11,12 @@
     <title>Hyponet</title>
     <link rel="shortcut icon" type="image/png" href="favicon.ico" />
     <style type="text/css">
-        *{
+        * {
             margin: 0;
             padding: 0;
             border: 0;
         }
+
         /* denne farve erstatter den blå markeringsfarve */
         ::selection {
             background: #ffff00;
@@ -37,11 +38,12 @@
             line-height: 1.9em;
             font-size: 16px;
             border: 1px #333 solid;
+            margin: 10px;
             padding: 5px;
             width: 450px
         }
 
-        div .purpleparagraf{
+        div .purpleparagraf {
             background-color: rgb(160, 85, 160);
             line-height: 1.9em;
             font-size: 16px;
@@ -51,10 +53,11 @@
             width: 450px
         }
 
-        svg{
+        svg {
             height: 20px;
             overflow: visible;
         }
+
         .pil {
             fill: lightgreen;
             stroke: #333;
@@ -80,7 +83,6 @@
         </div>
 
         <div class="greenbox" id="greenbox">
-            <p hidden=hidden>Skjult uddybning</p>
         </div>
 
 
@@ -98,8 +100,8 @@
             //gem musekliks x og y-koordinator
             $('body').on('click', function (e) {
                 console.log("du har klikket")
-                console.log(e.originalEvent.screenX ) 
-                console.log(e.originalEvent.screenY ) 
+                console.log(e.originalEvent.screenX)
+                console.log(e.originalEvent.screenY)
 
             })
 
@@ -119,18 +121,7 @@
             })
             $('body').on('click', '#NyGrundNodeKnap', function () {
 
-
-                let NytPTag = document.createElement("p");
-                $(NytPTag).attr("contenteditable", "true");
-
-                if (document.getElementsByClassName("redbox")[0] = undefined) {
-                    let NySamtale = document.createElement("div");
-                    NySamtale.attr("id", "samtale");
-                    NySamtale.attr("class", "container-fluid");
-                    document.getElementById("NyGrundNodeKnap").append(NySamtale)
-                }
-                document.getElementsByClassName("redbox")[0].append(NytPTag);
-                SendGrundNode()
+                LavEnGrundnodeBoks()
 
             })
 
@@ -166,23 +157,34 @@
 
             //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
-            var driver = neo4j.v1.driver('bolt://localhost:11001', neo4j.v1.auth.basic('neo4j', '123'));
+            //HVIS INTET VIRKER SÅ PRØV AT GÅ IND I "MANAGE" FOR DATABASEN OG SE HVILKEN PORT DER ER INDSTILLET
+            var driver = neo4j.v1.driver('bolt://localhost:7687', neo4j.v1.auth.basic('neo4j', '123'));
             //Åbn en session
             var session = driver.session()
-            //Opret et tekstfelt til grundnoder
-            //
-            // SKAL LAVES DYNAMISK!!!!
-            //
-            var grundnodetekstfelt = $(".redbox p")
+            //Opret et tekstfelt til grundnoder        
+            function LavEnGrundnodeBoks() {
 
+                let NytPTag = document.createElement("p");
+                $(NytPTag).attr("contenteditable", "true");
 
+                if (document.getElementsByClassName("redbox")[0] = undefined) {
+                    let NySamtale = document.createElement("div");
+                    NySamtale.attr("id", "samtale");
+                    NySamtale.attr("class", "container-fluid");
+                    document.getElementById("NyGrundNodeKnap").append(NySamtale)
+                }
+                else{
+                    document.getElementsByClassName("redbox")[0].append(NytPTag);
+                    SendGrundNode()
 
-
+                }
+                
+            }
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode() {
                 session
                     .run(
-                        "CREATE (n:ROD {name: \"" + $(grundnodetekstfelt).text() +
+                        "CREATE (n:ROD {name: \"" + $(".redbox p").text() +
                         "\" }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)"
                     )
                     .subscribe({
@@ -214,7 +216,7 @@
 
                 var kunDenEneGang = true;
 
-                grundnodetekstfelt.keypress(function (e) {
+                $(".redbox p").keypress(function (e) {
                     //submit ved ENTER
                     if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                         console.log("ENTER i grundnodetekstfeltet")
@@ -225,16 +227,16 @@
                     }
                 });
 
-                grundnodetekstfelt.mousedown(function (e) {
+                $(".redbox p").mousedown(function (e) {
                     //fjern placeholderteksten
-                    if (grundnodetekstfelt.text() === "Skriv noget her") {
-                        grundnodetekstfelt.text("")
+                    if ($(".redbox p").text() === "Skriv noget her") {
+                        $(".redbox p").text("")
                         console.log("Placeholder Fjernet ")
                     };
+                    //Fjern eventuelle mark-elementer i dette p-element
                     FjernMarkTag(e);
-                    let grundnodetekstfeltet = e.currentTarget.innerText;
-
-                    if (grundnodetekstfeltet != "" && kunDenEneGang && e.currentTarget.id == "") {
+                    //
+                    if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
                         console.log(
                             "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen"
                         )
@@ -247,7 +249,7 @@
             SendGrundNode()
             //Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
             function HentIDTilGrundnode(fraGrundnoden) {
-                grundnodetekstfelt.attr("id", fraGrundnoden.GrundNodensID)
+                $(".redbox p").attr("id", fraGrundnoden.GrundNodensID)
             }
 
 
@@ -437,7 +439,9 @@
 
                             },
                             onCompleted: function () {
-                                console.log("Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder")
+                                console.log(
+                                    "Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder"
+                                )
                             },
                             onError: function (error) {
                                 console.log(error)
@@ -452,7 +456,7 @@
                 session
                     .run(
                         "MERGE (n:ASS {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: CurrentMARKNode.MarkNodensName 
+                            nameParam: CurrentMARKNode.MarkNodensName
                         })
                     .subscribe({
                         onNext: function (record) {
@@ -468,21 +472,19 @@
                             //Lav ASS-rel til relevante noder
                             LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
                             LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
-
-                            
                         },
                         onError: function (error) {
                             console.log(error)
                         }
                     })
             };
-             //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
-             function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
+            //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
+            function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
                 //Outputboks ÅBNES
                 var NytPTag = document.createElement("p");
                 $(NytPTag).attr("id", ASSNoden.ASSNodensID)
                 $(NytPTag).attr("class", "purpleparagraf")
-                $(NytPTag).attr("contenteditable", "true"); 
+                $(NytPTag).attr("contenteditable", "true");
                 NytPTag.innerText = NoderMedSammeIndhold[0].MATCHENDENodensName;
                 console.log("nu bliver der lavet en associationsboks")
 
@@ -498,16 +500,18 @@
                 }
 
             }
-        
+
             //Opret et tekstfelt til uddybning (som er en specnode)
             function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES
-
+                //Først, lav et p-element
                 var NytPTag = document.createElement("p");
-                $(NytPTag).attr("contenteditable", "true"); 
-                console.log("Uddybningsboks udspringer fra "+ MarknodenDenKommerFra.MarkNodensName)
+                //Dernæst, giv attributter til det
+                $(NytPTag).attr("contenteditable", "true");
+                console.log("Uddybningsboks udspringer fra " + MarknodenDenKommerFra.MarkNodensName)
+                //Dernæst, find det element som det nye p-element skal ligge efter
                 var ParentNode = document.getElementById(FraNodensID);
-
+                //Denne funktion laver en svg og lægger den foran det nye p-element
                 LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra)
                 SendSpecNode(MarknodenDenKommerFra);
             }
@@ -515,36 +519,40 @@
             //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
             //
             function LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra) {
-                
-                var div = document.createElement('div');
-                var html = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra
-                    .MarkNodensID + "' class='pil' points=''/></svg>"
-                div.innerHTML = html;
-                div.appendChild(NytPTag);
+                //Lav en omgivende ramme
+                var svgramme = document.createElement('div');
+                //Definér det der skal indsættes
+                var svghtml = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra.MarkNodensID +
+                    "' class='pil' points=''/></svg>"
+                //indsæt element i omgivende ramme
+                svgramme.innerHTML = svghtml;
+                //indsæt p-elementet fra LavEnUddybningsboks til denne svg
+                svgramme.appendChild(NytPTag);
 
                 //Hvis markering foregår i redbox
                 if (ParentNode.parentElement == document.getElementById("redbox")) {
                     console.log("Uddybningsboks udspringer fra grundnode")
-                    document.getElementById("greenbox").append(div)
+                    document.getElementById("greenbox").append(svgramme)
                 } else {
-                    $(div).insertAfter(ParentNode);
+                    $(svgramme).insertAfter(ParentNode);
                 }
 
-                //Find markeringen
-                var markering = document.getElementById(MarknodenDenKommerFra.MarkNodensID).getBoundingClientRect()
-                console.log(markering)
-
+                //Find markeringens x og y-koordinater
+                var markering = document.getElementById(MarknodenDenKommerFra.MarkNodensID)
+                    .getBoundingClientRect()
+                //Find uddybningsfeltets x og y-koordinator
                 var uddybning = NytPTag.getBoundingClientRect()
-                console.log(NytPTag)
-                console.log(uddybning)
-                //Først sæt: x,y for tekstboks overkant
-                //Andet sæt: x,y for mark-tag
-                //Tredje sæt: x,y for tekstboks overkant
                 var pil = document.getElementById("pilTilMark" + MarknodenDenKommerFra.MarkNodensID);
-                var placeringAfPileBen1 = parseInt(markering.width+5) + "," + parseInt(21)
-                var placeringAfPileSpids = parseInt(markering.x + (markering.width/2)) + "," + parseInt(-10)
-                var placeringAfPileBen2 = parseInt(uddybning.width/4) + "," + parseInt(21)
-                pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " + placeringAfPileBen2);
+                var placeringAfPileBen1 = parseInt(markering.width + 5) + "," + parseInt(
+                    21) //Først sæt: x,y for tekstboks overkant
+                var placeringAfPileSpids = parseInt(markering.x + (markering.width / 2)) + "," + parseInt(-
+                    10) //Andet sæt: x,y for mark-tag
+                var placeringAfPileBen2 = parseInt(uddybning.width / 4) + "," + parseInt(
+                    21) //Tredje sæt: x,y for tekstboks overkant
+                //Placering af taleboblepilens to ben og spids
+                pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " +
+                    placeringAfPileBen2);
+                console.log("Taleboblens pil har følgende koordinater:")
                 console.log(pil.getAttributeNS(null, "points"))
 
             }
@@ -647,7 +655,7 @@
             //
             //IKKE LAVET ENDNU
             //
-           
+
 
 
 
