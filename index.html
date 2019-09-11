@@ -1,13 +1,15 @@
 ﻿<!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="da">
 <!--Dansk sprogattribut-->
 
+<html xmlns="http://www.w3.org/1999/xhtml" lang="da">
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <!--Tegnsæt utf-8-->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <!--Mobilskalering-->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Hyponet</title>
     <link rel="shortcut icon" type="image/png" href="favicon.ico" />
     <style type="text/css">
@@ -31,7 +33,7 @@
             border: 1px #333 solid;
             border-radius: 10px;
             margin-left: 10px;
-            margin-top:0px;
+            margin-top: 0px;
             margin-bottom: 10px;
             padding: 5px;
             width: 450px;
@@ -76,17 +78,16 @@
     <button id="fyldknap">Fyld vinduet fra sidst</button>
     <button id="gemknap">Gem denne samtale</button>
     <button id="NyGrundNodeKnap">Ny kontekst (Ny Grundnode)</button>
-
-
-
+ 
     <div class="container-fluid" id="samtale">
+            <!-- <div id="drag-drop-area"></div> -->
+
         <p class="redbox" contenteditable="true">Skriv noget her</p>
     </div>
 
-  <!-- Neo4j driver -->
-  <script src="/js/neo4j-driver.js"></script>
+    <!-- Neo4j driver -->
+    <script src="/js/neo4j-driver.js"></script>
     <!-- <script src="https://unpkg.com/neo4j-driver"></script> -->
-    <!-- <script src="/js/js2neo.min.js"></script> -->
     <!-- JQuery 3.4.1 -->
     <script src="/js/jquery-3.4.1.js"></script>
     <!-- Bootstrap og Popper -->
@@ -94,13 +95,6 @@
 
     <script type="text/javascript">
         $(function () {
-            //gem musekliks x og y-koordinator
-            // $('body').on('click', function (e) {
-            //     console.log("du har klikket")
-            //     console.log(e.originalEvent.screenX)
-            //     console.log(e.originalEvent.screenY)
-
-            // })
 
 
             $('body').on('click', '#gemknap', function () {
@@ -142,7 +136,8 @@
 
             function FjernAltIDOM() {
                 //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
-                document.getElementById("samtale").innerHTML = "<p class='redbox' contenteditable='true'>Skriv noget nyt...</p";
+                document.getElementById("samtale").innerHTML =
+                    "<p class='redbox' contenteditable='true'>Skriv noget nyt...</p";
             }
 
             // Retrieve Content
@@ -172,23 +167,21 @@
                     NySamtale.attr("id", "samtale");
                     NySamtale.attr("class", "container-fluid");
                     document.getElementById("NyGrundNodeKnap").append(NySamtale)
-                }             
-                else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
+                } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
                     $(NytPTag).insertBefore(e.currentTarget);
                     SendGrundNode()
-                }
-                else if (e.currentTarget.id == "NyGrundNodeKnap") {
+                } else if (e.currentTarget.id == "NyGrundNodeKnap") {
                     $("#samtale").prepend(NytPTag);
                     SendGrundNode()
                 }
-                  
-                
-                
-                
+
+
+
+
             }
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode(e) {
-                
+
                 session
                     .run(
                         "CREATE (n:ROD {name: \"" + e.target.innerText +
@@ -225,14 +218,13 @@
 
                 $("p.redbox").keypress(function (e) {
                     //submit ved ENTER
-                    if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "" ) {
+                    if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                         console.log("ENTER i redbox")
                         //Tillad kun ENTER én gang
                         kunDenEneGang = false;
                         e.preventDefault()
                         LavEnGrundnode(e)
-                    }
-                    else if (e.which == 13 && kunDenEneGang == false) {
+                    } else if (e.which == 13 && kunDenEneGang == false) {
                         kunDenEneGang = true;
                         e.preventDefault()
                         LavEnGrundnodeBoks(e)
@@ -245,8 +237,7 @@
                     if ($("p.redbox").text() === "Skriv noget her") {
                         $("p.redbox").text("")
                         console.log("Placeholder Fjernet ")
-                    }
-                    else if ($("p.redbox").text() === "Skriv noget nyt...") {
+                    } else if ($("p.redbox").text() === "Skriv noget nyt...") {
                         $("p.redbox").text("")
                         console.log("Placeholder Fjernet igen")
                     }
@@ -267,7 +258,7 @@
             SendGrundNode()
             //Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
             function HentIDTilGrundnode(fraGrundnoden, e) {
-              
+
                 e.target.setAttribute("id", fraGrundnoden.GrundNodensID)
             }
 
@@ -277,7 +268,7 @@
 
 
                 var selectedText = '';
-                
+
                 var NodeWhichIsSelected = event.target;
                 if (!window.x) {
                     console.log("Objekt til at gemme markering i laves")
@@ -297,9 +288,9 @@
                     return selectedText;
                 }
                 //udfør kun hvis der ER markeret noget
-                if (x.Selector.getSelected().toString() !='') {
+                if (x.Selector.getSelected().toString() != '') {
 
-                    
+
 
 
                     //Send indholdet, hvis man har glemt at trykke ENTER
@@ -516,7 +507,7 @@
 
                 var ParentNode = document.getElementById(FraNoden.id);
 
-                if (ParentNode.parentElement == $("p.redbox")) { 
+                if (ParentNode.parentElement == $("p.redbox")) {
                     var nyOutputBoks = document.createElement("div")
                     $(nyOutputBoks).attr("class", "purpleboks")
                     console.log("output udspringer fra grundnode")
@@ -557,7 +548,7 @@
                 svgramme.appendChild(NytPTag);
 
                 //Hvis markering foregår i redbox
-                if (ParentNode.parentElement == $("p.redbox")) { 
+                if (ParentNode.parentElement == $("p.redbox")) {
                     console.log("Uddybningsboks udspringer fra grundnode")
                     document.getElementsByClassName("greenbox").append(svgramme)
                 } else {
