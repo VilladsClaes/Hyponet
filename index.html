@@ -334,8 +334,8 @@
                         },
                         onCompleted: function () {
                             SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
-                            LavEnMarkRel(NodeTheSelectionWasMadeIn.id, MARKNoden)
-                            TjekAndreSPECEllerGRUNDNoderForMARK(MARKNoden, NodeTheSelectionWasMadeIn)
+                            LavEnMarkRel(NodeTheSelectionWasMadeIn, MARKNoden)
+                            
                         },
                         onError: function (error) {
                             console.log(error)
@@ -376,10 +376,10 @@
             })
 
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
-            function LavEnMarkRel(FraNodensID, TilMarkNode) {
+            function LavEnMarkRel(FraNoden, TilMarkNode) {
                 session
                     .run(
-                        `MATCH (n) WHERE (n:SPEC OR n:ROD) AND ID(n) = ${FraNodensID}
+                        `MATCH (n) WHERE (n:SPEC OR n:ROD) AND ID(n) = ${FraNoden.id}
                                 MATCH (l: ${TilMarkNode.MarkNodensLabels[0]} {creationTime:${TilMarkNode
                             .MarkNodensCreationTime}, name:"${TilMarkNode.MarkNodensName}"})
                                 CREATE (n)-[r:MARK]->(l)`
@@ -387,7 +387,9 @@
                     .subscribe({
                         onNext: function () {},
                         onCompleted: function () {
-                            LavEnUddybningsboks(FraNodensID, TilMarkNode)
+                            LavEnUddybningsboks(FraNoden, TilMarkNode)
+                            TjekAndreSPECEllerGRUNDNoderForMARK(FraNoden, MARKNoden)
+
                             //session.close()
                         },
                         onError: function (error) {
@@ -395,11 +397,11 @@
                         }
                     })
                 console.log("LavEnMarkRel: " + " ID: " +
-                    FraNodensID + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
+                    FraNoden.id + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
                     .MarkNodensID);
             };
 
-            function TjekAndreSPECEllerGRUNDNoderForMARK(CurrentMARKNode, FraNoden) {
+            function TjekAndreSPECEllerGRUNDNoderForMARK(FraNoden, CurrentMARKNode) {
                 //Gem de rodnoder og specnoder der indeholder denne markering
                 var NoderMedSammeIndhold = []
 
@@ -422,7 +424,12 @@
                             console.log("Noder som indeholder denne markering:")
                             console.log(NoderMedSammeIndhold)
                             //Lav en association hvis der er flere end én fundne
-                            if (NoderMedSammeIndhold.length >= 1) {
+                            //denne betingelse kan have forskellige konditioner:
+                            //1. NoderMedSammeIndhold.length > Antal mark-rel fra den givne node (nodens kontekst)
+                            //2. Et Array bestående af de Noder der er forbundet FRA eller TIL denne node målt fra Grundnode eller Slutnode (nodens tyndge)
+                            //3. Et Array bestående af de ordtræer som associationerne til denne node forbinder til. Jo større mængde ordtræer til denne node jo mere relevant
+                            //4. Et Array bestående af de noder der har overlappende mængder af associationer tilhørende dem (relevans)
+                            if (NoderMedSammeIndhold.length > 0) {
 
                                 LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden)
                             }
@@ -443,8 +450,8 @@
                 for (let Markeringer = 0; Markeringer < NoderMedSammeIndhold.length; Markeringer++) {
                     const MarkeringAtLaveRelationTil = NoderMedSammeIndhold[Markeringer];
                     //Navnet på den specnode eller grundnode som der er matchet
-                    console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
-                    console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
+                    // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
+                    // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
                     session
                         .run(
                             //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
@@ -484,7 +491,7 @@
                             }
                         },
                         onCompleted: function () {
-                            console.log("der er lavet en association")
+                            console.log("der er lavet en association til ASSNoden" + ASSNoden.ASSNodensID)
                             //Lav ASS-rel til relevante noder
                             LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
                             LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
@@ -508,18 +515,21 @@
                 var ParentNode = document.getElementById(FraNoden.id);
 
                 if (ParentNode.parentElement == $("p.redbox")) {
+                    console.log("output udspringer fra grundnode")
+
                     var nyOutputBoks = document.createElement("div")
                     $(nyOutputBoks).attr("class", "purpleboks")
-                    console.log("output udspringer fra grundnode")
                     nyOutputBoks.append(NytPTag)
                 } else {
-                    $(NytPTag).insertAfter(ParentNode);
+                    $(NytPTag).insertAfter(ParentNode.parentElement.lastElementChild);
+                    console.log("Output placeret efter")
+                    console.log(ParentNode)
+
                 }
 
             }
-
             //Opret et tekstfelt til uddybning (som er en specnode)
-            function LavEnUddybningsboks(FraNodensID, MarknodenDenKommerFra) {
+            function LavEnUddybningsboks(FraNoden, MarknodenDenKommerFra) {
                 //UDDYBNINGSBOKS ÅBNES
                 //Først, lav et p-element
                 var NytPTag = document.createElement("p");
@@ -528,15 +538,15 @@
                 $(NytPTag).addClass("greenbox")
                 console.log("Uddybningsboks udspringer fra " + MarknodenDenKommerFra.MarkNodensName)
                 //Dernæst, find det element som det nye p-element skal ligge efter
-                var ParentNode = document.getElementById(FraNodensID);
+                var ParentNode = document.getElementById(FraNoden.id);
                 //Denne funktion laver en svg og lægger den foran det nye p-element
-                LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra)
+                LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra)
                 SendSpecNode(MarknodenDenKommerFra);
             }
 
             //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
             //
-            function LavEnTaleboblePil(ParentNode, NytPTag, FraNodensID, MarknodenDenKommerFra) {
+            function LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) {
                 //Lav en omgivende ramme
                 var svgramme = document.createElement('div');
                 //Definér det der skal indsættes
