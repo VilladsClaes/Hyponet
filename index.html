@@ -86,12 +86,12 @@
     </div>
 
     <!-- Neo4j driver -->
-    <script src="/js/neo4j-driver.js"></script>
+    <script src="js/neo4j-driver.js"></script>
     <!-- <script src="https://unpkg.com/neo4j-driver"></script> -->
     <!-- JQuery 3.4.1 -->
-    <script src="/js/jquery-3.4.1.js"></script>
+    <script src="js/jquery-3.4.1.js"></script>
     <!-- Bootstrap og Popper -->
-    <script src="/js/bootstrap.bundle.js"></script>
+    <script src="js/bootstrap.bundle.js"></script>
 
     <script type="text/javascript">
         $(function () {
@@ -389,6 +389,8 @@
                         onCompleted: function () {
                             LavEnUddybningsboks(FraNoden, TilMarkNode)
                             TjekAndreSPECEllerGRUNDNoderForMARK(FraNoden, MARKNoden)
+                            //Mål afstanden fra denne MARKnode til den nærmeste anden MARKnode med samme indhold. Den gælder kun hvis der ER to MARK-noder med dette indhold
+                            TjekAfstandFraDenneMarkNodeTilFjernMarkNode(MARKNoden)
 
                             //session.close()
                         },
@@ -405,10 +407,22 @@
                 //Gem de rodnoder og specnoder der indeholder denne markering
                 var NoderMedSammeIndhold = []
 
+
                 session
                     .run(
                         //Find uddybninger eller rodnoder der indeholder markeringen, undtagen markeringer der peger direkte på disse rødder eller uddybninger
-                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID} MATCH (n) WHERE (n:SPEC OR n:ROD) AND (LOWER(n.name) CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}")) AND NOT (n)-[:MARK]->(m) RETURN  n.name, n.creationTime, ID(n), labels(n)`
+                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID}
+                         MATCH (n) WHERE (n:SPEC OR n:ROD) AND (LOWER(n.name) 
+                         CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}")) 
+                         AND NOT (n)-[:MARK]->(m) RETURN  n.name, n.creationTime, ID(n), labels(n)`
+                        /*
+                        UDVID MED FØLGENDE:
+                        
+                        1. ASS-rel hvor markeringen fx "gen" indgår i en rodnode uden mellemrum fx "ingen kan lide ost". ASS-rel som disse skal have mindre vægt end markeringer hvor der er mellemrum om ordet
+                        2. ASS-rel kan begrænses til kun at være til noder der selv har en tilhørende marknode med samme indhold. Således vil ASS-noden "villads" kun opstå hvis "Der går Villads" og "Han hedder Villads"  begge har markering på netop "Villads"                      
+                        
+                        
+                        */
                     )
                     .subscribe({
                         onNext: function (record) {
@@ -421,7 +435,7 @@
                             NoderMedSammeIndhold.push(MATCHENDENode)
                         },
                         onCompleted: function () {
-                            console.log("Noder som indeholder denne markering:")
+                            console.log("SPEC- og ROD-noder som indeholder denne markering:")
                             console.log(NoderMedSammeIndhold)
                             //Lav en association hvis der er flere end én fundne
                             //denne betingelse kan have forskellige konditioner:
@@ -432,6 +446,9 @@
                             if (NoderMedSammeIndhold.length > 0) {
 
                                 LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden)
+
+                                //DEN HER VIRKER IKKE!!!
+                                TjekSPECogRODtilArray(CurrentMARKNode, MATCHENDENode)
                             }
                             //session.close()
                         },
@@ -440,18 +457,87 @@
                         }
                     });
 
+                    
+
 
             }
 
+            //DENNE VIRKER IKKE!!!
+            function TjekAfstandFraDenneMarkNodeTilFjernMarkNode(CurrentMARKNode) {
+                //Returnerer kortest afstand mellem MARK og MARK 
+                session
+                    .run(
+                        
+                        `MATCH (n:MARK { name:"${CurrentMARKNode.MarkNodensName}" }),(m:MARK { name:"${CurrentMARKNode.MarkNodensName}" }), 
+                        afstand = shortestPath((n)-[*]-(m))
+                        RETURN length(afstand)`                        
+                    )
+                    .subscribe({
+                        onNext: function (record) {                           
+                           //Denne session returnerer afstand = et tal?
+                           //Behøver vi vide mere?
+                        },
+                        onCompleted: function () {
+                            console.log("Den nærmeste MARK-node der også havde denne markering")
+                            console.log(afstand)
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    });     
+            }
+
+ //DENNE VIRKER IKKE!!!
+            //Find SPEC- eller ROD-noder som er forbundne til de noder der er ASS-rel til
+             function TjekSPECogRODtilArray(CurrentMARKNode, MATCHENDENode) {
+                //Funktionen BØR køres for hvert element i var NoderMedSammeIndhold=[MATCHENDENODER]
+                
+                session
+                    .run(
+                        //Find uddybninger eller rodnoder der indeholder markeringen, undtagen markeringer der peger direkte på disse rødder eller uddybninger
+                        `MATCH (m:MARK) WHERE m.name = "${CurrentMARKNode.MarkNodensName}"
+                         MATCH (n) WHERE (n:SPEC OR n:ROD) 
+                         AND (LOWER(n.name) 
+                         CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}")) 
+                         AND NOT (n)-[:MARK]->(m) 
+                         MATCH (gc:SPEC{name:"${MATCHENDENode.MATCHENDENodensName}"})<--(p:SPEC)<--(gp:SPEC)
+                         RETURN  n.name, n.creationTime, ID(n), labels(n)`
+                      
+                    )
+                    .subscribe({
+                        onNext: function (record) {
+                            NODECONNECTEDTOMARK = {
+                                NODECONNECTEDTOMARKNodensCreationTime: record.get('n.creationTime'),
+                                NODECONNECTEDTOMARKNodensID: record.get('ID(n)'),
+                                NODECONNECTEDTOMARKNodensName: record.get('n.name'),
+                                NODECONNECTEDTOMARKNodensLabels: record.get('labels(n)')
+                            }
+                                                                                  
+
+                           
+                        },
+                        onCompleted: function () {
+                            console.log("Hvad er forbundet til den node som har samme indhold som denne MARK")
+                            console.log(NODECONNECTEDTOMARK)                          
+                            //session.close()
+                        },
+                        onError: function (error) {
+                            console.log(error)
+                        }
+                    });
+            }
 
 
             //Byg en associations-relation fra Associationsnoden til alle de markeringer med samme indhold
             function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
                 for (let Markeringer = 0; Markeringer < NoderMedSammeIndhold.length; Markeringer++) {
+
                     const MarkeringAtLaveRelationTil = NoderMedSammeIndhold[Markeringer];
+
                     //Navnet på den specnode eller grundnode som der er matchet
                     // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
                     // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
+                    
                     session
                         .run(
                             //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
