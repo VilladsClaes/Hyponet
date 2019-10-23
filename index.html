@@ -197,9 +197,8 @@
                             }
                         },
                         onCompleted: function () {
-                            console.log("LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +
-                                " indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden
-                                .GrundNodensID)
+                            console.table([GrundNoden]);
+                           // console.log("%c LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +" indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden.GrundNodensID, "color: red;")
 
                             HentIDTilGrundnode(GrundNoden, e)
                             // session.close()
@@ -301,6 +300,8 @@
             // OG
             //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet
             function SurroundSelectedTextWithMarkTag(MarkNodeID) {
+                //marknodens ID - egenskab fra objekt
+                console.table([MarkNodeID]);
                 var tusch = x.Selector.getSelected();
                 if (document.selection && !window.getSelection) {
                     tusch.pasteHTML("<mark id=" + MarkNodeID + ">" +
@@ -377,6 +378,7 @@
 
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
             function LavEnMarkRel(FraNoden, TilMarkNode) {
+                console.table([FraNoden.id, TilMarkNode]);
                 session
                     .run(
                         `MATCH (n) WHERE (n:SPEC OR n:ROD) AND ID(n) = ${FraNoden.id}
@@ -398,9 +400,9 @@
                             console.log(error)
                         }
                     })
-                console.log("LavEnMarkRel: " + " ID: " +
+                console.log("%c LavEnMarkRel: " + " ID: " +
                     FraNoden.id + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
-                    .MarkNodensID);
+                    .MarkNodensID, "color: #f8ca48;");
             };
 
             function TjekAndreSPECEllerGRUNDNoderForMARK(FraNoden, CurrentMARKNode) {
@@ -436,7 +438,7 @@
                         },
                         onCompleted: function () {
                             console.log("SPEC- og ROD-noder som indeholder denne markering:")
-                            console.log(NoderMedSammeIndhold)
+                            console.table([NoderMedSammeIndhold])
                             //Lav en association hvis der er flere end én fundne
                             //denne betingelse kan have forskellige konditioner:
                             //1. NoderMedSammeIndhold.length > Antal mark-rel fra den givne node (nodens kontekst)
@@ -577,7 +579,7 @@
                             }
                         },
                         onCompleted: function () {
-                            console.log("der er lavet en association til ASSNoden" + ASSNoden.ASSNodensID)
+                            console.log("der er lavet en association til ASSNoden " + "%c" + ASSNoden.ASSNodensID, "color:purple;")
                             //Lav ASS-rel til relevante noder
                             LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
                             LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
@@ -601,7 +603,7 @@
                 var ParentNode = document.getElementById(FraNoden.id);
 
                 if (ParentNode.parentElement == $("p.redbox")) {
-                    console.log("output udspringer fra grundnode")
+                    console.log("output udspringer fra" + "c% grundnode", "color:red;")
 
                     var nyOutputBoks = document.createElement("div")
                     $(nyOutputBoks).attr("class", "purpleboks")
@@ -622,7 +624,7 @@
                 //Dernæst, giv attributter til det
                 $(NytPTag).attr("contenteditable", "true");
                 $(NytPTag).addClass("greenbox")
-                console.log("Uddybningsboks udspringer fra " + MarknodenDenKommerFra.MarkNodensName)
+                console.log("Uddybningsboks udspringer fra " + "%c" + MarknodenDenKommerFra.MarkNodensName, "color:#f8ca48;")
                 //Dernæst, find det element som det nye p-element skal ligge efter
                 var ParentNode = document.getElementById(FraNoden.id);
                 //Denne funktion laver en svg og lægger den foran det nye p-element
