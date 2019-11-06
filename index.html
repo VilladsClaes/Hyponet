@@ -93,11 +93,79 @@
     <!-- Bootstrap og Popper -->
     <script src="js/bootstrap.bundle.js"></script>
     <!-- Knapper -->
-    <script src="js/knapper.js"></script>
+    <!-- <script src="js/knapper.js"></script> -->
 
 
     <script type="text/javascript">
         $(function () {
+            
+            /*
+
+            To-do: 
+                - Find en måde at tillade at man bruger " " i Grund og Spec og mark-noder
+                - fjern svg-pilen når den ikke peger direkte på Fra-noden, eller forlæng pilen efterhånden som boksen rykkes nedad
+                - merge marknoder med samme name-indhold, hvis de udspringer fra samme spec- eller grundnode
+                - tilføj n.range på marknoder så det fremgår af marknoden HVOR i Fra-noden der er markeret
+                    ELLER
+                - udtænk en måde at opsplitte en node til et array af ord, og derefter vælg fra dette array hvilket ord der er markeret, med hensynstagen til sammensatte ord
+                - Tilføj søgefelt-knap hvor man kan genfinde noder baseret på ord, eller på association
+
+
+
+            */
+
+
+
+            $('body').on('click', '#gemknap', function () {
+
+                GemTilLocalstorage();
+            })
+
+            $('body').on('click', '#fjernknap', function () {
+
+                FjernAltIDOM()
+            })
+            $('body').on('click', '#fyldknap', function () {
+
+                HentAltTilDOM()
+            })
+            $('body').on('click', '#NyGrundNodeKnap', function (e) {
+                //Hvordan får jeg indsat en redbox forrest i samtale
+                console.log(e)
+                LavEnGrundnodeBoks(e)
+
+            })
+
+
+            function GemTilLocalstorage() {
+                //Hent tidligere indtastninger fra denne browers localstorage
+                if (localStorage.getItem("indtastninger") != null) {
+                    var indtastninger = localStorage.getItem("indtastninger");
+                }
+                //Hent JSON
+                var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
+                //Skriv til localstorage
+                var helehjemmesiden = document.getElementById("samtale").innerHTML;
+                localStorage.setItem("indtastninger", helehjemmesiden);
+                //Skriv JSON
+                localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
+                //Erstat HTML med det fra localstorage
+            }
+
+
+            function FjernAltIDOM() {
+                //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
+                document.getElementById("samtale").innerHTML =
+                    "<p class='redbox' contenteditable='true'>Skriv noget nyt..</p";
+            }
+
+            // Retrieve Content
+            function HentAltTilDOM() {
+                document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem(
+                    "indtastninger"));
+            }
+
+
 
             //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
@@ -248,7 +316,7 @@
                 x.Selector.getSelected = function () {
 
                     if (window.getSelection) {
-                        selectedText = window.getSelection();  
+                        selectedText = window.getSelection();
                     }
                     //  else if (document.getSelection) {
                     //     selectedText = document.getSelection();
@@ -258,9 +326,10 @@
                     return selectedText;
                 }
                 //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum
-                if ((x.Selector.getSelected().toString() != '') && (x.Selector.getSelected().toString() !=' ')) {
+                if ((x.Selector.getSelected().toString() != '') && (x.Selector.getSelected().toString() !=
+                    ' ')) {
 
-                    
+
                     //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
                     //!!!!!!!!!!!!!!!!!IMPLEMENTER FØRST NÅR SNAPSELECTION KUN KØRES HVIS DET ORD MAN MARKERER KUN HAR ÉT TEGN FORAN ELLER BAGVED INDEN WHITESPACE
                     // snapSelectionToWord(selectedText)
@@ -329,8 +398,11 @@
             function LavEnMarkNode(SelectedTextFromWindow, NodeTheSelectionWasMadeIn) {
                 session
                     .run(
-                        "CREATE (n:MARK {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                            nameParam: $.trim(SelectedTextFromWindow) //Dette bliver til en Mark-node
+                        "CREATE (n:MARK {name:{nameParam}}) SET n.creationTime = timestamp(), n.range = {rangeParam} RETURN n.creationTime, n.name, ID(n), n.range, labels(n)", {
+                            nameParam: $.trim(SelectedTextFromWindow) /*Dette bliver til en Mark-node */ ,
+                            /*!!!!!!!!!!!!!!!FORSØG PÅ AT NEDFÆLDE FRA HVOR OG TIL HVOR AT MARKERINGEN BLEV LAVET */
+                            rangeParam: $.trim(SelectedTextFromWindow).indexOf(NodeTheSelectionWasMadeIn
+                                .innerText)
                         })
                     .subscribe({
                         onNext: function (record) {
@@ -338,12 +410,19 @@
                                 MarkNodensCreationTime: record.get('n.creationTime'),
                                 MarkNodensID: record.get('ID(n)'),
                                 MarkNodensName: record.get('n.name'),
-                                MarkNodensLabels: record.get('labels(n)')
+                                MarkNodensLabels: record.get('labels(n)'),
+                                MarkNodensKontekst: record.get('n.range')
                             }
                         },
                         onCompleted: function () {
+                            console.log(NodeTheSelectionWasMadeIn)
+                            console.log(MARKNoden.MarkNodensKontekst)
                             SurroundSelectedTextWithMarkTag(MARKNoden.MarkNodensID)
+                            //Læg markeringer på præcis det samme indhold sammen i én mark-node
+                            // SamlMarkNoder(MARKNoden)
                             LavEnMarkRel(NodeTheSelectionWasMadeIn, MARKNoden)
+
+
 
                         },
                         onError: function (error) {
@@ -351,6 +430,35 @@
                         }
                     })
             }
+            //!!!!!!!!!!!! HVIS EN SPECNODE HAR TO MARKERINGSNODER MED DET SAMME INDHOLD, SÅ SKAL DE LIGGES SAMMEN TIL ÉN MARKNODE
+            // function SamlMarkNoder(MARKNoden){
+            //     session
+            //         .run(
+            //             "MERGE (n:MARK {name:{nameParam}}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
+            //                 nameParam: MARKNoden.MarkNodensName
+            //             })
+            //         .subscribe({
+            //             onNext: function (record) {
+            //                 NyMARKNoden = {
+            //                     NyMARKNodensCreationTime: record.get('n.creationTime'),
+            //                     NyMARKNodensID: record.get('ID(n)'),
+            //                     NyMARKNodensName: record.get('n.name'),
+            //                     NyMARKNodensLabels: record.get('labels(n)')
+            //                 }
+            //             },
+            //             onCompleted: function () {
+            //                 console.log("Enslydende MARKnoder lagt sammen " + "%c" +
+            //                 NyMARKNoden.MarkNodensID, "color:yellow;")
+            //                 // //Lav ASS-rel til relevante noder
+            //                 // LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
+            //                 // LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
+            //             },
+            //             onError: function (error) {
+            //                 console.log(error)
+            //             }
+            //         })
+
+            // }
             //Opret gule mark-opmærkninger
             // OG
             //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet
@@ -394,28 +502,27 @@
                 }
             }
 
-            
+
             $('body').on("mouseup", "p.redbox", function (e) {
                 //Vælg det markerede tekst ved mouseup
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .redbox")
             })
 
-            
+
             $('body').on("mouseup", ".greenbox", function (e) {
                 //Vælg det markerede tekst ved mouseup
                 SelectTextFromWindow(e)
                 //slet eventuelle greenbox'e som ikke er blevet udfyldt
-                
-                if(e.currentTarget.hasChildNodes){
-                    if(e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "")      
-                {                
-                e.currentTarget.nextElementSibling.remove()
-                console.log("tom greenbox fjernet")
+
+                //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
+                if (e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
+                    e.currentTarget.nextElementSibling.remove()
+                    console.log("tom greenbox fjernet")
                 }
-                }
-                
-               
+
+
+
                 console.log("der er mouseup i .greenbox")
             })
 

@@ -1,4 +1,4 @@
-$(function () {
+
 
 
   $('body').on('click', '#gemknap', function () {
@@ -41,7 +41,7 @@ $(function () {
   function FjernAltIDOM() {
       //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
       document.getElementById("samtale").innerHTML =
-          "<p class='redbox' contenteditable='true'>Skriv noget nyt...</p";
+          "<p class='redbox' contenteditable='true'>Skriv noget nyt..</p";
   }
 
   // Retrieve Content
@@ -50,4 +50,3 @@ $(function () {
           "indtastninger"));
   }
 
-})
