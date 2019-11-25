@@ -556,11 +556,15 @@
                     .MarkNodensID, "color: #f8ca48;");
             };
 
+
+            /* FIND VÆGT FRA STARTPUNKT. INKL. STARTPUNKTET SELV ( givet ved *0 og b:ROD):
+
+               MATCH (a:ROD)-[*0..]->(b) WHERE b:MARK OR b:SPEC OR b:ROD RETURN a.name, count(*)
+
+            */
             function TjekAndreSPECEllerGRUNDNoderForMARK(FraNoden, CurrentMARKNode) {
                 //Gem de rodnoder og specnoder der indeholder denne markering
                 var NoderMedSammeIndhold = []
-
-
                 session
                     .run(
                         //Find uddybninger eller rodnoder der indeholder markeringen, undtagen markeringer der peger direkte på disse rødder eller uddybninger
