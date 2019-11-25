@@ -83,6 +83,7 @@
         <!-- <div id="drag-drop-area"></div> -->
 
         <p class="redbox" contenteditable="true">Skriv noget her</p>
+
     </div>
 
     <!-- Neo4j driver -->
@@ -94,11 +95,10 @@
     <script src="js/bootstrap.bundle.js"></script>
     <!-- Knapper -->
     <!-- <script src="js/knapper.js"></script> -->
-
-
+    
     <script type="text/javascript">
         $(function () {
-            
+
             /*
 
             To-do: 
@@ -169,6 +169,7 @@
 
             //Opret forbindelse til neo4j
             //Neo4J forbindelse med javascript-driver
+            //adresse til localhost bolt port. Ny database
             //HVIS INTET VIRKER SÅ PRØV AT GÅ IND I "MANAGE" FOR DATABASEN OG SE HVILKEN PORT DER ER INDSTILLET
             var driver = neo4j.v1.driver('bolt://localhost:7687', neo4j.v1.auth.basic('neo4j', '123'));
             //Åbn en session
@@ -325,9 +326,9 @@
                     // }
                     return selectedText;
                 }
-                //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum
-                if ((x.Selector.getSelected().toString() != '') && (x.Selector.getSelected().toString() !=
-                    ' ')) {
+                //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
+                if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString() !=
+                        '.')) {
 
 
                     //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
@@ -563,10 +564,14 @@
                 session
                     .run(
                         //Find uddybninger eller rodnoder der indeholder markeringen, undtagen markeringer der peger direkte på disse rødder eller uddybninger
-                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID}
-                    MATCH (n) WHERE (n:SPEC OR n:ROD) AND (LOWER(n.name) 
-                    CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}")) 
-                    AND NOT (n)-[:MARK]->(m) RETURN  n.name, n.creationTime, ID(n), labels(n)`
+                       //MATCH de MARK-noder HVOR MARK-nodens ID er det samme som "det vi har markeret"
+                       //MATCH dette med de noder HVOR ROD-type eller SPEC-type ER samme navn som "det vi har markeret"
+                       //!!!!!!!!!!!!Match kun med noder der iforvejen har en markering på de samme bogstaver MATCH (h) WHERE (h)<-[:MARK]-(m)
+                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID} 
+                        MATCH (n) WHERE (n:SPEC OR n:ROD)                
+                        AND (LOWER (n.name) CONTAINS LOWER ("${CurrentMARKNode.MarkNodensName}"))
+                        AND NOT (n)-[:MARK]->(m)               
+                        RETURN  n.name, n.creationTime, ID(n), labels(n)`
                         /*
                         UDVID MED FØLGENDE:
                         
@@ -595,6 +600,7 @@
                             //2. Et Array bestående af de Noder der er forbundet FRA eller TIL denne node målt fra Grundnode eller Slutnode (nodens tyndge)
                             //3. Et Array bestående af de ordtræer som associationerne til denne node forbinder til. Jo større mængde ordtræer til denne node jo mere relevant
                             //4. Et Array bestående af de noder der har overlappende mængder af associationer tilhørende dem (relevans)
+                            //5. Et Array bestående af de morfemer/markeringer som er lavet på lignende ord
                             if (NoderMedSammeIndhold.length > 0) {
 
                                 LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden)
