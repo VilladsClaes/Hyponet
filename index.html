@@ -503,11 +503,17 @@
                 }
             }
 
-
+  
             $('body').on("mouseup", "p.redbox", function (e) {
                 //Vælg det markerede tekst ved mouseup
                 SelectTextFromWindow(e)
                 console.log("der er mouseup i .redbox")
+
+                if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
+                    e.currentTarget.nextElementSibling.remove()
+                    console.log("tom greenbox fjernet")
+                }
+
             })
 
 
@@ -517,7 +523,7 @@
                 //slet eventuelle greenbox'e som ikke er blevet udfyldt
 
                 //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
-                if (e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
+                if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
                     e.currentTarget.nextElementSibling.remove()
                     console.log("tom greenbox fjernet")
                 }
@@ -574,7 +580,8 @@
                         `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID} 
                         MATCH (n) WHERE (n:SPEC OR n:ROD)                
                         AND (LOWER (n.name) CONTAINS LOWER ("${CurrentMARKNode.MarkNodensName}"))
-                        AND NOT (n)-[:MARK]->(m)               
+                        AND (n)-[:MARK]->(:MARK {name:"${CurrentMARKNode.MarkNodensName}"})
+                        AND NOT (n)-[:MARK]->(m)     
                         RETURN  n.name, n.creationTime, ID(n), labels(n)`
                         /*
                         UDVID MED FØLGENDE:
@@ -685,21 +692,23 @@
                     });
             }*/
 
-
-            //Byg en associations-relation fra Associationsnoden til alle de markeringer med samme indhold
+          
+            //Byg en associations-relation fra Associationsnoden til alle de noder (SPEC/ROD) med samme indhold
             function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
-                for (let Markeringer = 0; Markeringer < NoderMedSammeIndhold.length; Markeringer++) {
+                for (let Noder = 0; Noder < NoderMedSammeIndhold.length; Noder++) {
 
-                    const MarkeringAtLaveRelationTil = NoderMedSammeIndhold[Markeringer];
+                    const NodeAtLaveRelationTil = NoderMedSammeIndhold[Noder];
 
                     //Navnet på den specnode eller grundnode som der er matchet
-                    // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensName)
-                    // console.log(MarkeringAtLaveRelationTil.MATCHENDENodensID)
+                    // console.log(NodeAtLaveRelationTil.MATCHENDENodensName)
+                    // console.log(NodeAtLaveRelationTil.MATCHENDENodensID)
 
                     session
                         .run(
-                            //${MarkeringAtLaveRelationTil.MATCHENDENodensName}
-                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) MATCH (l:${MarkeringAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${MarkeringAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${MarkeringAtLaveRelationTil.MATCHENDENodensName}"}) MERGE (n)-[:ASS]->(l)`
+                            //${NodeAtLaveRelationTil.MATCHENDENodensName}
+                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) 
+                             MATCH (l:${NodeAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${NodeAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${NodeAtLaveRelationTil.MATCHENDENodensName}"}) 
+                             MERGE (n)-[:ASS]->(l)`
                         )
                         .subscribe({
                             onNext: function (record) {
