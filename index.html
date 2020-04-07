@@ -95,13 +95,13 @@
     <script src="js/bootstrap.bundle.js"></script>
     <!-- Knapper -->
     <!-- <script src="js/knapper.js"></script> -->
-    
+
     <script type="text/javascript">
         $(function () {
 
             /*
 
-            To-do: 
+            To-do:
                 - Find en måde at tillade at man bruger " " i Grund og Spec og mark-noder
                 - fjern svg-pilen når den ikke peger direkte på Fra-noden, eller forlæng pilen efterhånden som boksen rykkes nedad
                 - merge marknoder med samme name-indhold, hvis de udspringer fra samme spec- eller grundnode
@@ -178,7 +178,7 @@
 
 
 
-            //Opret et tekstfelt til grundnoder        
+            //Opret et tekstfelt til grundnoder
             function LavEnGrundnodeBoks(e) {
 
                 let NytPTag = document.createElement("p");
@@ -261,37 +261,34 @@
 
 
 
+            function httpGetAsync(theUrl)
+            {
+             var xmlHttp = new XMLHttpRequest();
+             xmlHttp.onreadystatechange = function() {
+                 if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                     console.log(xmlHttp.responseText);
+             }
+             xmlHttp.open("GET", theUrl, true); // true for asynchronous
+             xmlHttp.send();
+            }
+
 
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode(e) {
-
-                session
-                    .run(
-                        "CREATE (n:ROD {name: \"" + e.target.innerText +
-                        "\" }) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)"
-                    )
-                    .subscribe({
-                        onNext: function (record) {
-                            GrundNoden = {
-                                GrundNodensCreationTime: record.get('n.creationTime'),
-                                GrundNodensID: record.get('ID(n)'),
-                                GrundNodensName: record.get('n.name'),
-                                GrundNodensLabels: record.get('labels(n)')
-                            }
-                        },
-                        onCompleted: function () {
-                            console.table([GrundNoden]);
-                            // console.log("%c LavEnGrundnode: " + GrundNoden.GrundNodensLabels[0] +" indhold: " + GrundNoden.GrundNodensName + " ID: " + GrundNoden.GrundNodensID, "color: red;")
-
-                            HentIDTilGrundnode(GrundNoden, e)
-                            // session.close()
-                        },
-                        onError: function (error) {
-                            console.log(error)
-                        }
-                    })
-
+              var nodeType = "ROOT";
+              var apiEndpointUrl ="https://localhost:44380/Node/Create/"+e.target.innerText +"/"+ nodeType;
+              httpGetAsync(apiEndpointUrl);
             };
+
+            function LavEnMarkRel(FraNode, TilNode){
+              var relationType = "Mark";
+              var markNodeName = TilNode.MarkNodensName;
+              var markNodensCreationTime = TilNode.MarkNodensCreationTime;
+              var markNodensLabel = TilNode.MarkNodensLabels[0];
+              var fraNodeId = FraNode.id;
+              var apiEndpointUrl="https://localhost:44380/Relation/Create/" + relationType + "/" + markNodeName + "/" + markNodensCreationTime + "/"+ markNodensLabel + "/" + fraNodeId;
+              httpGetAsync(apiEndpointUrl);
+            }
 
             //Send grundnode afsted
             SendGrundNode()
@@ -389,20 +386,19 @@
                 }
             }
 
-
-
-
-
-
-
             //Send indhold til neo4j om at oprette en marknode
             function LavEnMarkNode(SelectedTextFromWindow, NodeTheSelectionWasMadeIn) {
-                session
+
+              var nodeType = "ROOT";
+              var apiEndpointUrl ="https://localhost:44380/Node/Create/"+e.target.innerText +"/"+ nodeType;
+              httpGetAsync(apiEndpointUrl);
+
+            /*    session
                     .run(
                         "CREATE (n:MARK {name:{nameParam}}) SET n.creationTime = timestamp(), n.range = {rangeParam} RETURN n.creationTime, n.name, ID(n), n.range, labels(n)", {
-                            nameParam: $.trim(SelectedTextFromWindow) /*Dette bliver til en Mark-node */ ,
+                            nameParam: $.trim(SelectedTextFromWindow) /*Dette bliver til en Mark-node */
                             /*!!!!!!!!!!!!!!!FORSØG PÅ AT NEDFÆLDE FRA HVOR OG TIL HVOR AT MARKERINGEN BLEV LAVET */
-                            rangeParam: $.trim(SelectedTextFromWindow).indexOf(NodeTheSelectionWasMadeIn
+          /*                  rangeParam: $.trim(SelectedTextFromWindow).indexOf(NodeTheSelectionWasMadeIn
                                 .innerText)
                         })
                     .subscribe({
@@ -423,13 +419,11 @@
                             // SamlMarkNoder(MARKNoden)
                             LavEnMarkRel(NodeTheSelectionWasMadeIn, MARKNoden)
 
-
-
                         },
                         onError: function (error) {
                             console.log(error)
                         }
-                    })
+                    })     */
             }
             //!!!!!!!!!!!! HVIS EN SPECNODE HAR TO MARKERINGSNODER MED DET SAMME INDHOLD, SÅ SKAL DE LIGGES SAMMEN TIL ÉN MARKNODE
             // function SamlMarkNoder(MARKNoden){
@@ -503,7 +497,7 @@
                 }
             }
 
-  
+
             $('body').on("mouseup", "p.redbox", function (e) {
                 //Vælg det markerede tekst ved mouseup
                 SelectTextFromWindow(e)
@@ -532,7 +526,7 @@
 
                 console.log("der er mouseup i .greenbox")
             })
-
+/*
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
             function LavEnMarkRel(FraNoden, TilMarkNode) {
                 console.table([FraNoden.id, TilMarkNode]);
@@ -561,7 +555,7 @@
                     FraNoden.id + " Til " + TilMarkNode.MarkNodensLabels[0] + " ID: " + TilMarkNode
                     .MarkNodensID, "color: #f8ca48;");
             };
-
+*/
 
             /* FIND VÆGT FRA STARTPUNKT. INKL. STARTPUNKTET SELV ( givet ved *0 og b:ROD):
 
@@ -577,19 +571,19 @@
                        //MATCH de MARK-noder HVOR MARK-nodens ID er det samme som "det vi har markeret"
                        //MATCH dette med de noder HVOR ROD-type eller SPEC-type ER samme navn som "det vi har markeret"
                        //!!!!!!!!!!!!Match kun med noder der iforvejen har en markering på de samme bogstaver MATCH (h) WHERE (h)<-[:MARK]-(m)
-                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID} 
-                        MATCH (n) WHERE (n:SPEC OR n:ROD)                
+                        `MATCH (m:MARK) WHERE ID(m) = ${CurrentMARKNode.MarkNodensID}
+                        MATCH (n) WHERE (n:SPEC OR n:ROD)
                         AND (LOWER (n.name) CONTAINS LOWER ("${CurrentMARKNode.MarkNodensName}"))
                         AND (n)-[:MARK]->(:MARK {name:"${CurrentMARKNode.MarkNodensName}"})
-                        AND NOT (n)-[:MARK]->(m)     
+                        AND NOT (n)-[:MARK]->(m)
                         RETURN  n.name, n.creationTime, ID(n), labels(n)`
                         /*
                         UDVID MED FØLGENDE:
-                        
+
                         1. ASS-rel hvor markeringen fx "gen" indgår i en rodnode uden mellemrum fx "ingen kan lide ost". ASS-rel som disse skal have mindre vægt end markeringer hvor der er mellemrum om ordet
-                        2. ASS-rel kan begrænses til kun at være til noder der selv har en tilhørende marknode med samme indhold. Således vil ASS-noden "villads" kun opstå hvis "Der går Villads" og "Han hedder Villads"  begge har markering på netop "Villads"                      
-                        
-                        
+                        2. ASS-rel kan begrænses til kun at være til noder der selv har en tilhørende marknode med samme indhold. Således vil ASS-noden "villads" kun opstå hvis "Der går Villads" og "Han hedder Villads"  begge har markering på netop "Villads"
+
+
                         */
                     )
                     .subscribe({
@@ -629,16 +623,16 @@
 
             //DENNE VIRKER IKKE!!!
             /*function TjekAfstandFraDenneMarkNodeTilFjernMarkNode(CurrentMARKNode) {
-                //Returnerer kortest afstand mellem MARK og MARK 
+                //Returnerer kortest afstand mellem MARK og MARK
                 session
                     .run(
-                        
-                        `MATCH (n:MARK { name:"${CurrentMARKNode.MarkNodensName}" }),(m:MARK { name:"${CurrentMARKNode.MarkNodensName}" }), 
+
+                        `MATCH (n:MARK { name:"${CurrentMARKNode.MarkNodensName}" }),(m:MARK { name:"${CurrentMARKNode.MarkNodensName}" }),
                         afstand = shortestPath((n)-[*]-(m))
-                        RETURN length(afstand)`                        
+                        RETURN length(afstand)`
                     )
                     .subscribe({
-                        onNext: function (record) {                           
+                        onNext: function (record) {
                             //Denne session returnerer afstand = et tal?
                             //Behøver vi vide mere?
                         },
@@ -649,25 +643,25 @@
                         onError: function (error) {
                             console.log(error)
                         }
-                    });     
+                    });
             }*/
 
             //DENNE VIRKER IKKE!!!
             //Find SPEC- eller ROD-noder som er forbundne til de noder der er ASS-rel til
             /* function TjekSPECogRODtilArray(CurrentMARKNode, MATCHENDENode) {
                 //Funktionen BØR køres for hvert element i var NoderMedSammeIndhold=[MATCHENDENODER]
-                
+
                 session
                     .run(
                         //Find uddybninger eller rodnoder der indeholder markeringen, undtagen markeringer der peger direkte på disse rødder eller uddybninger
                         `MATCH (m:MARK) WHERE m.name = "${CurrentMARKNode.MarkNodensName}"
-                            MATCH (n) WHERE (n:SPEC OR n:ROD) 
-                            AND (LOWER(n.name) 
-                            CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}")) 
-                            AND NOT (n)-[:MARK]->(m) 
+                            MATCH (n) WHERE (n:SPEC OR n:ROD)
+                            AND (LOWER(n.name)
+                            CONTAINS LOWER("${CurrentMARKNode.MarkNodensName}"))
+                            AND NOT (n)-[:MARK]->(m)
                             MATCH (gc:SPEC{name:"${MATCHENDENode.MATCHENDENodensName}"})<--(p:SPEC)<--(gp:SPEC)
                             RETURN  n.name, n.creationTime, ID(n), labels(n)`
-                        
+
                     )
                     .subscribe({
                         onNext: function (record) {
@@ -677,13 +671,13 @@
                                 NODECONNECTEDTOMARKNodensName: record.get('n.name'),
                                 NODECONNECTEDTOMARKNodensLabels: record.get('labels(n)')
                             }
-                                                                                    
 
-                            
+
+
                         },
                         onCompleted: function () {
                             console.log("Hvad er forbundet til den node som har samme indhold som denne MARK")
-                            console.log(NODECONNECTEDTOMARK)                          
+                            console.log(NODECONNECTEDTOMARK)
                             //session.close()
                         },
                         onError: function (error) {
@@ -692,7 +686,7 @@
                     });
             }*/
 
-          
+
             //Byg en associations-relation fra Associationsnoden til alle de noder (SPEC/ROD) med samme indhold
             function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
                 for (let Noder = 0; Noder < NoderMedSammeIndhold.length; Noder++) {
@@ -706,8 +700,8 @@
                     session
                         .run(
                             //${NodeAtLaveRelationTil.MATCHENDENodensName}
-                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"}) 
-                             MATCH (l:${NodeAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${NodeAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${NodeAtLaveRelationTil.MATCHENDENodensName}"}) 
+                            `MATCH (n:${ASSNoden.ASSNodensLabels[0]} {creationTime:${ASSNoden.ASSNodensCreationTime}, name:"${ASSNoden.ASSNodensName}"})
+                             MATCH (l:${NodeAtLaveRelationTil.MATCHENDENodensLabels[0]} {creationTime:${NodeAtLaveRelationTil.MATCHENDENodensCreationTime}, name:"${NodeAtLaveRelationTil.MATCHENDENodensName}"})
                              MERGE (n)-[:ASS]->(l)`
                         )
                         .subscribe({
@@ -727,7 +721,7 @@
             }
 
 
-            //Lav en Associationsnode            
+            //Lav en Associationsnode
             function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden) {
                 session
                     .run(
