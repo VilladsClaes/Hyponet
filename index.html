@@ -247,7 +247,8 @@
                      console.log(xmlHttp.responseText);
              }
              xmlHttp.open("GET", theUrl, true); // true for asynchronous
-             xmlHttp.send();
+                xmlHttp.send();
+                return JSON.parse(xmlHttp.responseText);
             }
 
             //Send indhold til neo4j om at oprette en grundnode
@@ -599,6 +600,7 @@
                             //    console.log(
                             //        "Nu er der lavet ASS-rel fra denne association til de tidligere ROD og SPEC-noder"
                             //    )
+                 
                             
                 };
             }
@@ -735,7 +737,10 @@
                         console.log(
                             "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
                         )
-                        LavEnSpecnode(MarknodenDenKommerFra, e.currentTarget) //Funktionskald - skulle det have været et return?
+                        var specNodeResult = LavEnSpecnode(e.currentTarget); //Funktionskald - skulle det have været et return?
+                        SetCurrentGreenBoxId(specNodeResult.id, e.currentTarget);
+                        LavEnSpecRel(MarknodenDenKommerFra.id, SPECNoden) //funktionskald - skulle det have været et return?
+                       
                         e.currentTarget.removeAttribute("contenteditable")
                         kunDenEneGang = false;
                     }
@@ -749,23 +754,17 @@
 
 
             //Send indhold til neo4j om at oprette en Spec-node
-            function LavEnSpecnode(FraMarkNoden, CurrentGreenBoxWithKeypress) {
+            function LavEnSpecnode(CurrentGreenBoxWithKeypress) {
 
-                //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN NODE AF TYPEN SPEC
-                //"CREATE (n:SPEC {name:CurrentGreenBoxWithKeypress.innerText}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-                     
-                   
-                console.log("LavEnSpecNode: " + SPECNoden.SpecNodensLabels[0] +
-                    " ,indhold: " +
-                    SPECNoden.SpecNodensName + " ,ID: " + SPECNoden.SpecNodensID)
-                        
-                //Lav en spec-relation til den uddybende node til markeringen
-                HentIDTilSpecnode(SPECNoden, CurrentGreenBoxWithKeypress) //funktionskald - skulle det have været et return?
-                LavEnSpecRel(FraMarkNoden.MarkNodensID, SPECNoden) //funktionskald - skulle det have været et return?
-                           
+
+                var nodeType = "SPEC";
+                var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(CurrentGreenBoxWithKeypress.innerText) + "/" + nodeType;
+                var specNodeResult = httpGetAsync(theUrl);
+                return specNodeResult;                   
             }
+
             //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
-            function HentIDTilSpecnode(fraSpecnoden, CurrentGreenBoxWithKeypress) {
+            function SetCurrentGreenBoxId(fraSpecnoden, CurrentGreenBoxWithKeypress) {
                 $(CurrentGreenBoxWithKeypress).attr("id", fraSpecnoden.SpecNodensID)
             }
 
@@ -775,9 +774,7 @@
                 //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN RELATION AF TYPEN SPEC
                     //    `MATCH (n) WHERE (n:MARK) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
                     //.SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
-                   
-                console.log("LavEnSpecRel: " + " ID: " + FraMarkNodensID + " Til ID: " + TilSpecNode
-                    .SpecNodensID);
+                
             }
             //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
             //
