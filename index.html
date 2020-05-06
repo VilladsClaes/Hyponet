@@ -86,7 +86,7 @@
 
     </div>
 
-   
+
     <!-- JQuery 3.4.1 -->
     <script src="js/jquery-3.4.1.js"></script>
     <!-- Bootstrap og Popper -->
@@ -164,15 +164,18 @@
             }
 
             //Åbner ajax-api-xmlhttprequest-xhr
-            function httpGetAsync(theUrl) {
+            function httpGetAsync(theUrl, currentTarget, callback) {
                 var xmlHttp = new XMLHttpRequest();
+
                 xmlHttp.onreadystatechange = function () {
-                    if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
                         console.log(xmlHttp.responseText);
+                        var nodeResult = JSON.parse(xmlHttp.responseText)
+                        callback(nodeResult.id, currentTarget);
+                      }
                 }
                 xmlHttp.open("GET", theUrl, true); // true for asynchronous
                 xmlHttp.send();
-                return JSON.parse(xmlHttp.responseText);
             }
 
             //Opret et tekstfelt til grundnoder
@@ -258,8 +261,8 @@
                         //Tillad kun ENTER én gang
                         kunDenEneGang = false;
                         e.preventDefault()
-                        var rootNodeResult = LavEnGrundnode(e)  //Funktionskald indeni anden funktion. Skal dette være et return?
-                        SetBoxId(rootNodeResult.id, e.currentTarget);
+                        LavEnGrundnode(e)  //Funktionskald indeni anden funktion. Skal dette være et return?
+
                         //Hvis ENTER allerede ER blevet trykket
                     } else if (e.which == 13 && kunDenEneGang == false) {
                         kunDenEneGang = true;
@@ -326,17 +329,11 @@
                         kunDenEneGang = false;
                         e.preventDefault()
 
-
-
-                        
-
                         var specNodeResult = LavEnSpecnode(e.currentTarget); //Funktionskald - skulle det have været et return?
                         SetBoxId(specNodeResult.id, e.currentTarget);
                         LavEnSpecRel(MarknodenDenKommerFra.id, SPECNoden) //funktionskald - skulle det have været et return?
 
-
                         e.currentTarget.removeAttribute("contenteditable")
-
                     }
 
                 }); //Funktionskald - skulle det have været et return?
@@ -359,14 +356,12 @@
                 }); //Funktionskald - skulle det have været et return?
             }
 
-        
 
             //Send indhold til neo4j om at oprette en grundnode
             function LavEnGrundnode(e) {
              var nodeType = "ROOT";
              var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
-             var rootNodeResult = httpGetAsync(apiEndpointUrl);
-             return rootNodeResult;
+             httpGetAsync(apiEndpointUrl,e.currentTarget, SetBoxId);
             };
 
             //Send indhold til neo4j om at oprette en marknode
@@ -424,7 +419,7 @@
             //Send grundnode afsted
             SendGrundNode() //Funktionskald indeni anden funktion. Skal dette være et return?
 
-       
+
 
             //Send indhold til neo4j om at oprrette en (MARK)relation fra den forrige (grund)node til den indeværende (Mark)node
             function LavEnMarkRel(FraNoden, TilMarkNode) {
@@ -462,7 +457,7 @@
 
             //Lav en Associationsnode
             function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden) {
-                //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN NODE AF TYPEN ASS 
+                //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN NODE AF TYPEN ASS
                 //  "MERGE (n:ASS {name:CurrentMARKNode.MarkNodensName}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
 
 
@@ -474,12 +469,6 @@
                 LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) //Funktionskald - skulle det have været et return?
 
             };
-
-
-
-
-
-
 
 
             //Marker tekst i tekstfeltet
@@ -499,7 +488,7 @@
                     if (window.getSelection) {
                         selectedText = window.getSelection();
                     }
-              
+
                     return selectedText;
                 }
                 //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
@@ -565,7 +554,7 @@
                 }
             }
 
-       
+
             //Opret gule mark-opmærkninger
             // OG
             //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet
@@ -612,24 +601,6 @@
             }
 
 
-
-            $('body').on("mouseup", ".greenbox", function (e) {
-                //Vælg det markerede tekst ved mouseup
-                SelectTextFromWindow(e) //Funktionskald indeni anden funktion. Skal dette være et return?
-                //slet eventuelle greenbox'e som ikke er blevet udfyldt
-
-                //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
-                if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
-                    e.currentTarget.nextElementSibling.remove()
-                    console.log("tom greenbox fjernet")
-                }
-
-
-
-                console.log("der er mouseup i .greenbox")
-            })
-
-
             //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
 
             function LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) {
@@ -672,7 +643,7 @@
             }
             //
 
-          
+
 
 
             //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
