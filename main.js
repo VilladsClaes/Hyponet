@@ -174,6 +174,7 @@ $(function() {
       }
     });
   };
+
   $('body').on("mouseup", "p.redbox", function(e) {
     //Vælg det markerede tekst ved mouseup
     SelectTextFromWindow(e) //Funktionskald indeni anden funktion. Skal dette være et return?
@@ -219,7 +220,6 @@ $(function() {
         e.currentTarget.removeAttribute("contenteditable")
         kunDenEneGang = false;
       }
-
     }); //Funktionskald - skulle det have været et return?
   }
 
@@ -231,33 +231,34 @@ $(function() {
     return nodeResult;
   };
 
+  async function MarkNodeCreation(selectedText, domElement){
+     var selectionObject = await CreateMarkNode(selectedText, domElement);
+     SetBoxId(selectionObject);
+     CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+  }
+
+
   //Send indhold til neo4j om at oprette en marknode
-  async function LavEnMarkNode(selectedText, node) {
+  async function CreateMarkNode(selectedText, node) {
     var nodeType = "MARK";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
     var nodeResult = await httpGetAsync(apiEndpointUrl, node).then(SurroundSelectedTextWithMarkTag, console.log);
-    SetBoxId(nodeResult);
     return nodeResult;
   }
 
 
   //Send indhold til neo4j om at oprette en Spec-node
   function LavEnSpecnode(CurrentGreenBoxWithKeypress) {
-
     var nodeType = "SPEC";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(CurrentGreenBoxWithKeypress.innerText) + "/" + nodeType;
     var specNodeResult = httpGetAsync(theUrl);
     return specNodeResult;
   }
 
-  function LavEnMarkRel(FraNode, TilNode) {
-    var relationType = "Mark";
-    var markNodeName = TilNode.MarkNodensName;
-    var markNodensCreationTime = TilNode.MarkNodensCreationTime;
-    var markNodensLabel = TilNode.MarkNodensLabels[0];
-    var fraNodeId = FraNode.id;
-    var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + relationType + "/" + markNodeName + "/" + markNodensCreationTime + "/" + markNodensLabel + "/" + fraNodeId;
-    httpGetAsync(apiEndpointUrl);
+
+  function CreateRelation(fromNodeId, toNodeId, relationType){
+      var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
+      httpGetAsync(apiEndpointUrl);
   }
 
   //Åbner ajax-api-xmlhttprequest-xhr
@@ -286,7 +287,6 @@ $(function() {
 
     })
   }
-
 
   //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
   function SetBoxId(resultObject) {
@@ -350,7 +350,7 @@ $(function() {
       // snapSelectionToWord(selectedText)
 
       //Send indholdet, hvis man har glemt at trykke ENTER
-      LavEnMarkNode(selectedText, NodeWhichIsSelected) //Funktionskald indeni anden funktion. Skal dette være et return?
+      MarkNodeCreation(selectedText, NodeWhichIsSelected) //Funktionskald indeni anden funktion. Skal dette være et return?
     };
   }
 
