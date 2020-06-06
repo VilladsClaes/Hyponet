@@ -162,7 +162,7 @@ $(function () {
         console.log("ENTER i redbox")
         kunDenEneGang = false;
         e.preventDefault();
-        await CreateRootNode(e);
+        await RootNodeCreation(e);
       } else if (e.which == 13 && kunDenEneGang == false) {
         kunDenEneGang = true;
         e.preventDefault()
