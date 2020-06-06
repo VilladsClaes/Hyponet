@@ -82,10 +82,10 @@ $(function() {
       document.getElementById("NyGrundNodeKnap").append(NySamtale)
     } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
       $(NytPTag).insertBefore(e.currentTarget);
-      SendGrundNode() //Funktionskald indeni anden funktion. Skal dette være et return?
+      SendGrundNode()
     } else if (e.currentTarget.id == "NyGrundNodeKnap") {
       $("#samtale").prepend(NytPTag);
-      SendGrundNode() //Funktionskald indeni anden funktion. Skal dette være et return?
+      SendGrundNode()
     }
   }
 
@@ -102,31 +102,76 @@ $(function() {
     //Dernæst, find det element som det nye p-element skal ligge efter
     var ParentNode = document.getElementById(FraNoden.id);
     //Denne funktion laver en svg og lægger den foran det nye p-element
-    LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) //Funktionskald - skulle det have været et return?
-    SendSpecNode(MarknodenDenKommerFra); //Funktionskald - skulle det have været et return?
+    LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) 
+    SendSpecNode(MarknodenDenKommerFra); 
   }
 
+  function CreateGreenBox(fromBox, markNodeOrigin){
+    var greenBox = document.createElement("p");
+    $(greenBox).attr("contenteditable", "true");
+    $(greenBox).addClass("greenbox");
+    console.log("Uddybningsboks udspringer fra " + "%c" + markNodeOrigin.name,
+    "color:#f8ca48;");
+    var parentElement = document.getElementById(fromBox.id);
+    DrawSpeechBubble(parentElement, greenbox, markNodeOrigin);
+    SendSpecNode(markNodeOrigin); 
+  }
 
+  function DrawSpeechBubble(fromBox, greenBox, markNodeOrigin) {
+      //Lav en omgivende ramme
+      var svgFrame = document.createElement('div');
+      //Definér det der skal indsættes
+      var svgHtml = "<svg><polyline id='pilTilMark" + markNodeOrigin.id +
+        "' class='pil' points=''/></svg>";
+      //indsæt element i omgivende ramme
+      svgFrame.innerHTML = svgHtml;
+      //indsæt p-elementet fra LavEnUddybningsboks til denne svg
+      svgFrame.appendChild(greenBox);
+  
+      //Hvis markering foregår i redbox
+      if (fromBox.parentElement == $("p.redbox")) {
+        console.log("Uddybningsboks udspringer fra grundnode");
+        document.getElementsByClassName("greenbox").append(svgFrame);
+      } else {
+        $(svgFrame).insertAfter(fromBox);
+      }
+  
+      //Find markeringens x og y-koordinater
+      var selection = document.getElementById(markNodeOrigin.id).getBoundingClientRect();
+      //Find uddybningsfeltets x og y-koordinator
+      var specification = greenBox.getBoundingClientRect();
+      var arrow = document.getElementById("pilTilMark" + markNodeOrigin.id);
+      var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
+      var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
+      var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
+      //Placering af taleboblepilens to ben og spids
+      arrow.setAttributeNS(null, "points", locationOfArrowLeft + " " + coordinatesOfArrowTip + " " +
+      coordinatesArrowRight);
+      console.log("Taleboblens pil har følgende koordinater:");
+      console.log(arrow.getAttributeNS(null, "points"));
+  
+    }
+  
 
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
   function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
     //Outputboks ÅBNES
     var NytPTag = document.createElement("p");
-    $(NytPTag).attr("id", ASSNoden.ASSNodensID)
-    $(NytPTag).attr("class", "purpleparagraf")
+    $(NytPTag).attr("id", ASSNoden.ASSNodensID);
+    $(NytPTag).attr("class", "purpleparagraf");
     $(NytPTag).attr("contenteditable", "true");
     //Det er her magien skal ske. Mange algoritmer skal afgøre hvad der skal stå her i dette outputfelt
     NytPTag.innerText = NoderMedSammeIndhold[0].MATCHENDENodensName;
-    console.log("nu bliver der lavet en associationsboks")
+    console.log("nu bliver der lavet en associationsboks");
 
     var ParentNode = document.getElementById(FraNoden.id);
 
     if (ParentNode.parentElement == $("p.redbox")) {
-      console.log("output udspringer fra" + "c% grundnode", "color:red;")
+      console.log("output udspringer fra" + "c% grundnode", "color:red;"); 
 
-      var nyOutputBoks = document.createElement("div")
-      $(nyOutputBoks).attr("class", "purpleboks")
-      nyOutputBoks.append(NytPTag)
+      var nyOutputBoks = document.createElement("div");
+      $(nyOutputBoks).attr("class", "purpleboks");
+      nyOutputBoks.append(NytPTag);
     } else {
       $(NytPTag).insertAfter(ParentNode.parentElement.lastElementChild);
       console.log("Output placeret efter")
@@ -169,7 +214,7 @@ $(function() {
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
         console.log(
           "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
-        var rootNodeResult = LavEnGrundnode(e) //Funktionskald indeni anden funktion. Skal dette være et return?
+        var rootNodeResult = LavEnGrundnode(e)
         SetBoxId(rootNodeResult.id, e.currentTarget);
       }
     });
@@ -177,7 +222,7 @@ $(function() {
 
   $('body').on("mouseup", "p.redbox", function(e) {
     //Vælg det markerede tekst ved mouseup
-    SelectTextFromWindow(e) //Funktionskald indeni anden funktion. Skal dette være et return?
+    SelectTextFromWindow(e);
     console.log("der er mouseup i .redbox")
 
     if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
@@ -188,8 +233,7 @@ $(function() {
   })
 
 
-  //(GENBRUG) Skriv i tekstfeltet og send ved Enter
-  function SendSpecNode(MarknodenDenKommerFra) {
+  function SendSpecNode(markNodeOrigin) {
     //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
     var kunDenEneGang = true;
 
@@ -197,30 +241,29 @@ $(function() {
       if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
         console.log("ENTER i .greenbox")
         kunDenEneGang = false;
-        e.preventDefault()
+        e.preventDefault();
 
-        var specNodeResult = LavEnSpecnode(e.currentTarget); //Funktionskald - skulle det have været et return?
-        SetBoxId(specNodeResult.id, e.currentTarget);
-        LavEnSpecRel(MarknodenDenKommerFra.id, SPECNoden) //funktionskald - skulle det have været et return?
+        var specNodeResult = CreateSpecNode(e.currentTarget);
+        CreateRelation(markNodeOrigin.id, specNodeResult.node);
         e.currentTarget.removeAttribute("contenteditable")
       }
-    }); //Funktionskald - skulle det have været et return?
+    }); 
 
     $("body").on("mousedown", ".greenbox", function(e) {
-      FjernMarkTag(e); //Funktionskald - skulle det have været et return?
+      FjernMarkTag(e); 
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id ==
         "") {
         console.log(
           "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
         )
-        var specNodeResult = LavEnSpecnode(e.currentTarget); //Funktionskald - skulle det have været et return?
+        var specNodeResult = CreateSpecNode(e.currentTarget); 
         SetBoxId(specNodeResult.id, e.currentTarget);
-        LavEnSpecRel(MarknodenDenKommerFra.id, SPECNoden) //funktionskald - skulle det have været et return?
+        LavEnSpecRel(markNodeOrigin.id, SPECNoden) 
 
-        e.currentTarget.removeAttribute("contenteditable")
+        e.currentTarget.removeAttribute("contenteditable");
         kunDenEneGang = false;
       }
-    }); //Funktionskald - skulle det have været et return?
+    }); 
   }
 
   //Send indhold til neo4j om at oprette en grundnode
@@ -248,10 +291,10 @@ $(function() {
 
 
   //Send indhold til neo4j om at oprette en Spec-node
-  function LavEnSpecnode(CurrentGreenBoxWithKeypress) {
+  function CreateSpecNode(CurrentGreenBoxWithKeypress) {
     var nodeType = "SPEC";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(CurrentGreenBoxWithKeypress.innerText) + "/" + nodeType;
-    var specNodeResult = httpGetAsync(theUrl);
+    var specNodeResult = httpGetAsync(apiEndpointUrl).then(SetBoxId, console.log);
     return specNodeResult;
   }
 
@@ -260,6 +303,14 @@ $(function() {
       var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
       httpGetAsync(apiEndpointUrl);
   }
+
+
+  //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
+  function SetBoxId(resultObject) {
+    console.log(resultObject.element);
+    $(resultObject.element).attr("id", resultObject.node.id)
+  }
+
 
   //Åbner ajax-api-xmlhttprequest-xhr
   function httpGetAsync(theUrl, htmlElement) {
@@ -288,21 +339,13 @@ $(function() {
     })
   }
 
-  //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
-  function SetBoxId(resultObject) {
-    console.log(resultObject.element);
-    $(resultObject.element).attr("id", resultObject.node.id)
-  }
-
   //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
   function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
-    //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN RELATION AF TYPEN SPEC
-    //    `MATCH (n) WHERE (n:MARK) AND ID(n)=${FraMarkNodensID} MATCH (l:${TilSpecNode.SpecNodensLabels[0]} {creationTime:${TilSpecNode
-    //.SpecNodensCreationTime},name:"${TilSpecNode.SpecNodensName}"}) CREATE (n)-[r:SPEC]->(l)`
+  
   }
 
   //Send grundnode afsted
-  SendGrundNode() //Funktionskald indeni anden funktion. Skal dette være et return?
+  SendGrundNode()
 
   //Byg en associations-relation fra Associationsnoden til alle de noder (SPEC/ROD) med samme indhold
   function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
@@ -319,8 +362,8 @@ $(function() {
     console.log("der er lavet en association til ASSNoden " + "%c" +
       ASSNoden.ASSNodensID, "color:purple;")
     //Lav ASS-rel til relevante noder
-    LavEnAssRel(ASSNoden, NoderMedSammeIndhold) //Funktionskald - skulle det have været et return?
-    LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) //Funktionskald - skulle det have været et return?
+    LavEnAssRel(ASSNoden, NoderMedSammeIndhold) 
+    LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) 
   };
 
   //Marker tekst i tekstfeltet
@@ -350,7 +393,7 @@ $(function() {
       // snapSelectionToWord(selectedText)
 
       //Send indholdet, hvis man har glemt at trykke ENTER
-      MarkNodeCreation(selectedText, NodeWhichIsSelected) //Funktionskald indeni anden funktion. Skal dette være et return?
+      MarkNodeCreation(selectedText, NodeWhichIsSelected)
     };
   }
 
@@ -446,7 +489,7 @@ $(function() {
 
   $('body').on("mouseup", ".greenbox", function(e) {
     //Vælg det markerede tekst ved mouseup
-    SelectTextFromWindow(e) //Funktionskald indeni anden funktion. Skal dette være et return?
+    SelectTextFromWindow(e)
     //slet eventuelle greenbox'e som ikke er blevet udfyldt
 
     //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
@@ -463,44 +506,7 @@ $(function() {
 
   //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
 
-  function LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) {
-    //Lav en omgivende ramme
-    var svgramme = document.createElement('div');
-    //Definér det der skal indsættes
-    var svghtml = "<svg><polyline id='pilTilMark" + MarknodenDenKommerFra.MarkNodensID +
-      "' class='pil' points=''/></svg>"
-    //indsæt element i omgivende ramme
-    svgramme.innerHTML = svghtml;
-    //indsæt p-elementet fra LavEnUddybningsboks til denne svg
-    svgramme.appendChild(NytPTag);
-
-    //Hvis markering foregår i redbox
-    if (ParentNode.parentElement == $("p.redbox")) {
-      console.log("Uddybningsboks udspringer fra grundnode")
-      document.getElementsByClassName("greenbox").append(svgramme)
-    } else {
-      $(svgramme).insertAfter(ParentNode);
-    }
-
-    //Find markeringens x og y-koordinater
-    var markering = document.getElementById(MarknodenDenKommerFra.MarkNodensID)
-      .getBoundingClientRect()
-    //Find uddybningsfeltets x og y-koordinator
-    var uddybning = NytPTag.getBoundingClientRect()
-    var pil = document.getElementById("pilTilMark" + MarknodenDenKommerFra.MarkNodensID);
-    var placeringAfPileBen1 = parseInt(uddybning.width / 4) + "," + parseInt(
-      21) //Først sæt: x,y for tekstboks overkant
-    var placeringAfPileSpids = parseInt(markering.x + (markering.width / 2)) + "," + parseInt(-
-      20) //Andet sæt: x,y for mark-tag
-    var placeringAfPileBen2 = parseInt(uddybning.width / 3) + "," + parseInt(
-      21) //Tredje sæt: x,y for tekstboks overkant
-    //Placering af taleboblepilens to ben og spids
-    pil.setAttributeNS(null, "points", placeringAfPileBen1 + " " + placeringAfPileSpids + " " +
-      placeringAfPileBen2);
-    console.log("Taleboblens pil har følgende koordinater:")
-    console.log(pil.getAttributeNS(null, "points"))
-
-  }
+ 
   //
 
 
