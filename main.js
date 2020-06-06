@@ -79,8 +79,7 @@ $(function () {
     var greenBox = document.createElement("p");
     $(greenBox).attr("contenteditable", "true");
     $(greenBox).addClass("greenbox");
-    console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name,
-      "color:#f8ca48;");
+    console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
     var parentElement = document.getElementById(fromBox.id);
     DrawSpeechBubble(parentElement, greenBox, resultObject);
     SendSpecNode(resultObject);
@@ -254,9 +253,10 @@ $(function () {
   };
 
   async function MarkNodeCreation(selectedText, domElement) {
-    var selectionObject = await CreateMarkNode(selectedText, domElement);
+    var resultObject = await CreateMarkNode(selectedText, domElement);
+    var selectionObject =  SurroundSelectedTextWithMarkTag(resultObject);
     SetBoxId(selectionObject);
-    CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+    await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
     CreateGreenBox(domElement, selectionObject);
   }
 
@@ -265,7 +265,7 @@ $(function () {
   async function CreateMarkNode(selectedText, node) {
     var nodeType = "MARK";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, node).then(SurroundSelectedTextWithMarkTag, console.log);
+    var nodeResult = await httpGetAsync(apiEndpointUrl, node);
     return nodeResult;
   }
 
