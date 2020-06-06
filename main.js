@@ -187,7 +187,7 @@ $(function () {
     });
 
     //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
-    $("p.redbox").mousedown(function (e) {
+    $("p.redbox").mousedown(async function (e) {
       //fjern placeholderteksten
       if ($("p.redbox").text() === "Skriv noget her") {
         $("p.redbox").text("")
@@ -204,8 +204,8 @@ $(function () {
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
         console.log(
           "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
-        var rootNodeResult = CreateRootNode(e)
-        SetBoxId(rootNodeResult.id, e.currentTarget);
+        await RootNodeCreation(e);
+
       }
     });
   };
@@ -254,11 +254,16 @@ $(function () {
     });
   }
 
+  async function RootNodeCreation(e) {
+    var rootNodeResult = await CreateRootNode(e);
+    SetBoxId(rootNodeResult);
+  }
+
   //Send indhold til neo4j om at oprette en grundnode
   async function CreateRootNode(e) {
     var nodeType = "ROOT";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget).then(SetBoxId, console.log);
+    var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
     return nodeResult;
   };
 
