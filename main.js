@@ -1,19 +1,5 @@
 $(function () {
 
-  /*
-
-  To-do:
-      - Find en måde at tillade at man bruger " " i Grund og Spec og mark-noder
-      - fjern svg-pilen når den ikke peger direkte på Fra-noden, eller forlæng pilen efterhånden som boksen rykkes nedad
-      - merge marknoder med samme name-indhold, hvis de udspringer fra samme spec- eller grundnode
-      - tilføj n.range på marknoder så det fremgår af marknoden HVOR i Fra-noden der er markeret
-          ELLER
-      - udtænk en måde at opsplitte en node til et array af ord, og derefter vælg fra dette array hvilket ord der er markeret, med hensynstagen til sammensatte ord
-      - Tilføj søgefelt-knap hvor man kan genfinde noder baseret på ord, eller på association
-
-
-
-  */
 
 
 
