@@ -33,7 +33,7 @@ $(function () {
   $('body').on('click', '#NyGrundNodeKnap', function (e) {
     //Hvordan får jeg indsat en redbox forrest i samtale
     console.log(e)
-    LavEnGrundnodeBoks(e)
+    CreateRedBox(e)
 
   })
 
@@ -67,43 +67,26 @@ $(function () {
   }
 
   //Opret et tekstfelt til grundnoder
-  function LavEnGrundnodeBoks(e) {
+  function CreateRedBox(e) {
 
-    let NytPTag = document.createElement("p");
-    $(NytPTag).attr("contenteditable", "true");
-    $(NytPTag).addClass("redbox")
+    let redBox = document.createElement("p");
+    $(redBox).attr("contenteditable", "true");
+    $(redBox).addClass("redbox")
 
     //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
     if (document.getElementsByClassName("redbox")[0] = undefined) {
       console.log("der er ingen redboxes i vindues")
-      let NySamtale = document.createElement("div");
-      NySamtale.attr("id", "samtale");
-      NySamtale.attr("class", "container-fluid");
-      document.getElementById("NyGrundNodeKnap").append(NySamtale)
+      let newConversation = document.createElement("div");
+      newConversation.attr("id", "conversation");
+      newConversation.attr("class", "container-fluid");
+      document.getElementById("NyGrundNodeKnap").append(newConversation)
     } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
-      $(NytPTag).insertBefore(e.currentTarget);
+      $(redBox).insertBefore(e.currentTarget);
       SendGrundNode()
     } else if (e.currentTarget.id == "NyGrundNodeKnap") {
-      $("#samtale").prepend(NytPTag);
+      $("#conversation").prepend(redBox);
       SendGrundNode()
     }
-  }
-
-  //Opret et tekstfelt til uddybning (som er en specnode)
-  function LavEnUddybningsboks(FraNoden, MarknodenDenKommerFra) {
-    //UDDYBNINGSBOKS ÅBNES
-    //Først, lav et p-element
-    var NytPTag = document.createElement("p");
-    //Dernæst, giv attributter til det
-    $(NytPTag).attr("contenteditable", "true");
-    $(NytPTag).addClass("greenbox")
-    console.log("Uddybningsboks udspringer fra " + "%c" + MarknodenDenKommerFra.MarkNodensName,
-      "color:#f8ca48;")
-    //Dernæst, find det element som det nye p-element skal ligge efter
-    var ParentNode = document.getElementById(FraNoden.id);
-    //Denne funktion laver en svg og lægger den foran det nye p-element
-    LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra)
-    SendSpecNode(MarknodenDenKommerFra);
   }
 
   function CreateGreenBox(fromBox, resultObject) {
@@ -160,9 +143,8 @@ $(function () {
 
   }
 
-
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
-  function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
+  function CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden) {
     //Outputboks ÅBNES
     var NytPTag = document.createElement("p");
     $(NytPTag).attr("id", ASSNoden.ASSNodensID);
@@ -199,7 +181,7 @@ $(function () {
       } else if (e.which == 13 && kunDenEneGang == false) {
         kunDenEneGang = true;
         e.preventDefault()
-        LavEnGrundnodeBoks(e)
+        CreateRedBox(e)
         console.log("ENTER trykket igen i redbox")
       }
     });
@@ -370,7 +352,7 @@ $(function () {
       ASSNoden.ASSNodensID, "color:purple;")
     //Lav ASS-rel til relevante noder
     LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
-    LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
+    CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
   };
 
   //Marker tekst i tekstfeltet
