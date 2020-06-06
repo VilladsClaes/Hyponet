@@ -1,4 +1,4 @@
-$(function() {
+$(function () {
 
   /*
 
@@ -17,20 +17,20 @@ $(function() {
 
 
 
-  $('body').on('click', '#gemknap', function() {
+  $('body').on('click', '#gemknap', function () {
 
     GemTilLocalstorage();
   })
 
-  $('body').on('click', '#fjernknap', function() {
+  $('body').on('click', '#fjernknap', function () {
 
     FjernAltIDOM()
   })
-  $('body').on('click', '#fyldknap', function() {
+  $('body').on('click', '#fyldknap', function () {
 
     HentAltTilDOM()
   })
-  $('body').on('click', '#NyGrundNodeKnap', function(e) {
+  $('body').on('click', '#NyGrundNodeKnap', function (e) {
     //Hvordan får jeg indsat en redbox forrest i samtale
     console.log(e)
     LavEnGrundnodeBoks(e)
@@ -102,56 +102,56 @@ $(function() {
     //Dernæst, find det element som det nye p-element skal ligge efter
     var ParentNode = document.getElementById(FraNoden.id);
     //Denne funktion laver en svg og lægger den foran det nye p-element
-    LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra) 
-    SendSpecNode(MarknodenDenKommerFra); 
+    LavEnTaleboblePil(ParentNode, NytPTag, FraNoden, MarknodenDenKommerFra)
+    SendSpecNode(MarknodenDenKommerFra);
   }
 
-  function CreateGreenBox(fromBox, markNodeOrigin){
+  function CreateGreenBox(fromBox, markNodeOrigin) {
     var greenBox = document.createElement("p");
     $(greenBox).attr("contenteditable", "true");
     $(greenBox).addClass("greenbox");
     console.log("Uddybningsboks udspringer fra " + "%c" + markNodeOrigin.name,
-    "color:#f8ca48;");
+      "color:#f8ca48;");
     var parentElement = document.getElementById(fromBox.id);
     DrawSpeechBubble(parentElement, greenbox, markNodeOrigin);
-    SendSpecNode(markNodeOrigin); 
+    SendSpecNode(markNodeOrigin);
   }
 
   function DrawSpeechBubble(fromBox, greenBox, markNodeOrigin) {
-      //Lav en omgivende ramme
-      var svgFrame = document.createElement('div');
-      //Definér det der skal indsættes
-      var svgHtml = "<svg><polyline id='pilTilMark" + markNodeOrigin.id +
-        "' class='pil' points=''/></svg>";
-      //indsæt element i omgivende ramme
-      svgFrame.innerHTML = svgHtml;
-      //indsæt p-elementet fra LavEnUddybningsboks til denne svg
-      svgFrame.appendChild(greenBox);
-  
-      //Hvis markering foregår i redbox
-      if (fromBox.parentElement == $("p.redbox")) {
-        console.log("Uddybningsboks udspringer fra grundnode");
-        document.getElementsByClassName("greenbox").append(svgFrame);
-      } else {
-        $(svgFrame).insertAfter(fromBox);
-      }
-  
-      //Find markeringens x og y-koordinater
-      var selection = document.getElementById(markNodeOrigin.id).getBoundingClientRect();
-      //Find uddybningsfeltets x og y-koordinator
-      var specification = greenBox.getBoundingClientRect();
-      var arrow = document.getElementById("pilTilMark" + markNodeOrigin.id);
-      var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
-      var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
-      var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
-      //Placering af taleboblepilens to ben og spids
-      arrow.setAttributeNS(null, "points", locationOfArrowLeft + " " + coordinatesOfArrowTip + " " +
-      coordinatesArrowRight);
-      console.log("Taleboblens pil har følgende koordinater:");
-      console.log(arrow.getAttributeNS(null, "points"));
-  
+    //Lav en omgivende ramme
+    var svgFrame = document.createElement('div');
+    //Definér det der skal indsættes
+    var svgHtml = "<svg><polyline id='pilTilMark" + markNodeOrigin.id +
+      "' class='pil' points=''/></svg>";
+    //indsæt element i omgivende ramme
+    svgFrame.innerHTML = svgHtml;
+    //indsæt p-elementet fra LavEnUddybningsboks til denne svg
+    svgFrame.appendChild(greenBox);
+
+    //Hvis markering foregår i redbox
+    if (fromBox.parentElement == $("p.redbox")) {
+      console.log("Uddybningsboks udspringer fra grundnode");
+      document.getElementsByClassName("greenbox").append(svgFrame);
+    } else {
+      $(svgFrame).insertAfter(fromBox);
     }
-  
+
+    //Find markeringens x og y-koordinater
+    var selection = document.getElementById(markNodeOrigin.id).getBoundingClientRect();
+    //Find uddybningsfeltets x og y-koordinator
+    var specification = greenBox.getBoundingClientRect();
+    var arrow = document.getElementById("pilTilMark" + markNodeOrigin.id);
+    var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
+    var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
+    var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
+    //Placering af taleboblepilens to ben og spids
+    arrow.setAttributeNS(null, "points", locationOfArrowLeft + " " + coordinatesOfArrowTip + " " +
+      coordinatesArrowRight);
+    console.log("Taleboblens pil har følgende koordinater:");
+    console.log(arrow.getAttributeNS(null, "points"));
+
+  }
+
 
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
   function LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) {
@@ -167,7 +167,7 @@ $(function() {
     var ParentNode = document.getElementById(FraNoden.id);
 
     if (ParentNode.parentElement == $("p.redbox")) {
-      console.log("output udspringer fra" + "c% grundnode", "color:red;"); 
+      console.log("output udspringer fra" + "c% grundnode", "color:red;");
 
       var nyOutputBoks = document.createElement("div");
       $(nyOutputBoks).attr("class", "purpleboks");
@@ -181,7 +181,7 @@ $(function() {
 
   function SendGrundNode() {
     var kunDenEneGang = true;
-    $("p.redbox").keypress(async function(e) {
+    $("p.redbox").keypress(async function (e) {
       //submit ved ENTER
       if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
         console.log("ENTER i redbox")
@@ -197,7 +197,7 @@ $(function() {
     });
 
     //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
-    $("p.redbox").mousedown(function(e) {
+    $("p.redbox").mousedown(function (e) {
       //fjern placeholderteksten
       if ($("p.redbox").text() === "Skriv noget her") {
         $("p.redbox").text("")
@@ -220,7 +220,7 @@ $(function() {
     });
   };
 
-  $('body').on("mouseup", "p.redbox", function(e) {
+  $('body').on("mouseup", "p.redbox", function (e) {
     //Vælg det markerede tekst ved mouseup
     SelectTextFromWindow(e);
     console.log("der er mouseup i .redbox")
@@ -237,7 +237,7 @@ $(function() {
     //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
     var kunDenEneGang = true;
 
-    $(".greenbox").keypress(function(e) {
+    $(".greenbox").keypress(function (e) {
       if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
         console.log("ENTER i .greenbox")
         kunDenEneGang = false;
@@ -247,23 +247,23 @@ $(function() {
         CreateRelation(markNodeOrigin.id, specNodeResult.node);
         e.currentTarget.removeAttribute("contenteditable")
       }
-    }); 
+    });
 
-    $("body").on("mousedown", ".greenbox", function(e) {
-      FjernMarkTag(e); 
+    $("body").on("mousedown", ".greenbox", function (e) {
+      FjernMarkTag(e);
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id ==
         "") {
         console.log(
           "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
         )
-        var specNodeResult = CreateSpecNode(e.currentTarget); 
+        var specNodeResult = CreateSpecNode(e.currentTarget);
         SetBoxId(specNodeResult.id, e.currentTarget);
-        LavEnSpecRel(markNodeOrigin.id, SPECNoden) 
+        LavEnSpecRel(markNodeOrigin.id, SPECNoden)
 
         e.currentTarget.removeAttribute("contenteditable");
         kunDenEneGang = false;
       }
-    }); 
+    });
   }
 
   //Send indhold til neo4j om at oprette en grundnode
@@ -274,10 +274,10 @@ $(function() {
     return nodeResult;
   };
 
-  async function MarkNodeCreation(selectedText, domElement){
-     var selectionObject = await CreateMarkNode(selectedText, domElement);
-     SetBoxId(selectionObject);
-     CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+  async function MarkNodeCreation(selectedText, domElement) {
+    var selectionObject = await CreateMarkNode(selectedText, domElement);
+    SetBoxId(selectionObject);
+    CreateRelation(domElement.id, selectionObject.element.id, "Mark");
   }
 
 
@@ -299,9 +299,9 @@ $(function() {
   }
 
 
-  function CreateRelation(fromNodeId, toNodeId, relationType){
-      var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
-      httpGetAsync(apiEndpointUrl);
+  function CreateRelation(fromNodeId, toNodeId, relationType) {
+    var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
+    httpGetAsync(apiEndpointUrl);
   }
 
 
@@ -314,15 +314,14 @@ $(function() {
 
   //Åbner ajax-api-xmlhttprequest-xhr
   function httpGetAsync(theUrl, htmlElement) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       var xmlHttp = new XMLHttpRequest();
       var element = htmlElement;
-      xmlHttp.onreadystatechange = async function() {
+      xmlHttp.onreadystatechange = async function () {
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
           console.log("readystate = 4: " + xmlHttp.responseText);
           var jsonResult = await JSON.parse(xmlHttp.responseText);
-          var resultObject =
-          {
+          var resultObject = {
             node: jsonResult,
             element: element
           }
@@ -341,7 +340,7 @@ $(function() {
 
   //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
   function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
-  
+
   }
 
   //Send grundnode afsted
@@ -362,8 +361,8 @@ $(function() {
     console.log("der er lavet en association til ASSNoden " + "%c" +
       ASSNoden.ASSNodensID, "color:purple;")
     //Lav ASS-rel til relevante noder
-    LavEnAssRel(ASSNoden, NoderMedSammeIndhold) 
-    LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden) 
+    LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
+    LavEnOutputboks(FraNoden, NoderMedSammeIndhold, ASSNoden)
   };
 
   //Marker tekst i tekstfeltet
@@ -375,7 +374,7 @@ $(function() {
       x = {};
     }
     x.Selector = {};
-    x.Selector.getSelected = function() {
+    x.Selector.getSelected = function () {
 
       if (window.getSelection) {
         selectedText = window.getSelection();
@@ -470,43 +469,42 @@ $(function() {
     console.log(DenNodeMarkSkalFjernesFra.currentTarget.childElementCount)
     if (DenNodeMarkSkalFjernesFra.currentTarget.childElementCount > 0) {
       let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.target.id)
-        .getElementsByTagName(
-          'mark');
+        .getElementsByTagName('mark');
       while (marktag.length) {
         let parent = marktag[0].parentNode;
         while (marktag[0].firstChild) {
           parent.insertBefore(marktag[0].firstChild, marktag[0]);
         }
         parent.removeChild(marktag[0]);
-        console.log("der er fjernet mark-tag i p-tag")
+        console.log("der er fjernet mark-tag i p-tag");
       }
     } else {
-      console.log("Der er ingen mark-tag i denne node")
+      console.log("Der er ingen mark-tag i denne node");
     }
   }
 
 
 
-  $('body').on("mouseup", ".greenbox", function(e) {
+  $('body').on("mouseup", ".greenbox", function (e) {
     //Vælg det markerede tekst ved mouseup
     SelectTextFromWindow(e)
     //slet eventuelle greenbox'e som ikke er blevet udfyldt
 
     //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
     if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
-      e.currentTarget.nextElementSibling.remove()
-      console.log("tom greenbox fjernet")
+      e.currentTarget.nextElementSibling.remove();
+      console.log("tom greenbox fjernet");
     }
 
 
 
-    console.log("der er mouseup i .greenbox")
+    console.log("der er mouseup i .greenbox");
   })
 
 
   //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
 
- 
+
   //
 
 
