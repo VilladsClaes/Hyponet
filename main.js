@@ -106,23 +106,25 @@ $(function () {
     SendSpecNode(MarknodenDenKommerFra);
   }
 
-  function CreateGreenBox(fromBox, markNodeOrigin) {
+  function CreateGreenBox(fromBox, resultObject) {
     var greenBox = document.createElement("p");
     $(greenBox).attr("contenteditable", "true");
     $(greenBox).addClass("greenbox");
-    console.log("Uddybningsboks udspringer fra " + "%c" + markNodeOrigin.name,
+    console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name,
       "color:#f8ca48;");
     var parentElement = document.getElementById(fromBox.id);
-    DrawSpeechBubble(parentElement, greenbox, markNodeOrigin);
-    SendSpecNode(markNodeOrigin);
+    DrawSpeechBubble(parentElement, greenBox, resultObject);
+    SendSpecNode(resultObject);
   }
 
-  function DrawSpeechBubble(fromBox, greenBox, markNodeOrigin) {
+  function DrawSpeechBubble(fromBox, greenBox, resultObject) {
     //Lav en omgivende ramme
     var svgFrame = document.createElement('div');
     //Definér det der skal indsættes
-    var svgHtml = "<svg><polyline id='pilTilMark" + markNodeOrigin.id +
-      "' class='pil' points=''/></svg>";
+    var svgHtml = "<svg><polyline id='pilTilMark" + resultObject.node.id +
+      "' class='pil' points=''/> <polyline id='bundTilPil" + resultObject.node.id +
+      "' class='pil' points=''/> </svg>";
+
     //indsæt element i omgivende ramme
     svgFrame.innerHTML = svgHtml;
     //indsæt p-elementet fra LavEnUddybningsboks til denne svg
@@ -137,16 +139,22 @@ $(function () {
     }
 
     //Find markeringens x og y-koordinater
-    var selection = document.getElementById(markNodeOrigin.id).getBoundingClientRect();
+    var selection = document.getElementById(resultObject.node.id).getBoundingClientRect();
     //Find uddybningsfeltets x og y-koordinator
     var specification = greenBox.getBoundingClientRect();
-    var arrow = document.getElementById("pilTilMark" + markNodeOrigin.id);
+    var arrow = document.getElementById("pilTilMark" + resultObject.node.id);
+    var bottomArrow = document.getElementById("bundTilPil" + resultObject.node.id);
     var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
     var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
     var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
+    //var coordsBottom = 
+    //var lengthSideBottom = Math.sqrt((Math.pow(parseInt(specification.width / 4), 2) - Math.pow(parseInt(specification.width / 3)), 2)) + (Math.pow(parseInt(21), 2) - Math.pow(parseInt(21), 2));
     //Placering af taleboblepilens to ben og spids
-    arrow.setAttributeNS(null, "points", locationOfArrowLeft + " " + coordinatesOfArrowTip + " " +
-      coordinatesArrowRight);
+    arrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesOfArrowTip + " " +
+      coordinatesArrowRight + " " + coordinatesArrowLeft);
+    var coordinatesBottomRight = parseInt((specification.width - 1.5) / 3) + "," + parseInt(21);
+    bottomArrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesBottomRight);
+    bottomArrow.setAttributeNS(null, "style", "stroke:#90ee90;stroke-width:1.5;stroke-linecap:round");
     console.log("Taleboblens pil har følgende koordinater:");
     console.log(arrow.getAttributeNS(null, "points"));
 
@@ -187,7 +195,7 @@ $(function () {
         console.log("ENTER i redbox")
         kunDenEneGang = false;
         e.preventDefault();
-        await LavEnGrundnode(e);
+        await CreateRootNode(e);
       } else if (e.which == 13 && kunDenEneGang == false) {
         kunDenEneGang = true;
         e.preventDefault()
@@ -214,7 +222,7 @@ $(function () {
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
         console.log(
           "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
-        var rootNodeResult = LavEnGrundnode(e)
+        var rootNodeResult = CreateRootNode(e)
         SetBoxId(rootNodeResult.id, e.currentTarget);
       }
     });
@@ -237,29 +245,27 @@ $(function () {
     //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
     var kunDenEneGang = true;
 
-    $(".greenbox").keypress(function (e) {
+    $(".greenbox").keypress(async function (e) {
       if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
         console.log("ENTER i .greenbox")
-        kunDenEneGang = false;
         e.preventDefault();
 
-        var specNodeResult = CreateSpecNode(e.currentTarget);
-        CreateRelation(markNodeOrigin.id, specNodeResult.node);
+        var resultObject = await CreateSpecNode(e.currentTarget);
+        // SetBoxId(resultObject);
+        CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
         e.currentTarget.removeAttribute("contenteditable")
+        kunDenEneGang = false;
       }
     });
 
-    $("body").on("mousedown", ".greenbox", function (e) {
+    $("body").on("mousedown", ".greenbox", async function (e) {
       FjernMarkTag(e);
-      if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id ==
-        "") {
-        console.log(
-          "Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen"
-        )
-        var specNodeResult = CreateSpecNode(e.currentTarget);
-        SetBoxId(specNodeResult.id, e.currentTarget);
-        LavEnSpecRel(markNodeOrigin.id, SPECNoden)
+      if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
+        console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
 
+        var resultObject = await CreateSpecNode(e.currentTarget);
+        // SetBoxId(resultObject);
+        CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
         e.currentTarget.removeAttribute("contenteditable");
         kunDenEneGang = false;
       }
@@ -267,7 +273,7 @@ $(function () {
   }
 
   //Send indhold til neo4j om at oprette en grundnode
-  async function LavEnGrundnode(e) {
+  async function CreateRootNode(e) {
     var nodeType = "ROOT";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
     var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget).then(SetBoxId, console.log);
@@ -278,6 +284,7 @@ $(function () {
     var selectionObject = await CreateMarkNode(selectedText, domElement);
     SetBoxId(selectionObject);
     CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+    CreateGreenBox(domElement, selectionObject);
   }
 
 
@@ -291,10 +298,11 @@ $(function () {
 
 
   //Send indhold til neo4j om at oprette en Spec-node
-  function CreateSpecNode(CurrentGreenBoxWithKeypress) {
+  async function CreateSpecNode(greenBoxElement) {
     var nodeType = "SPEC";
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(CurrentGreenBoxWithKeypress.innerText) + "/" + nodeType;
-    var specNodeResult = httpGetAsync(apiEndpointUrl).then(SetBoxId, console.log);
+    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
+    var specNodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
+    SetBoxId(specNodeResult);
     return specNodeResult;
   }
 
