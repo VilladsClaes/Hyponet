@@ -357,10 +357,17 @@ $(function () {
     x.Selector = {};
     x.Selector.getSelected = function () {
 
-      if (window.getSelection) {
+        if (window.getSelection)
+        {
         selectedText = window.getSelection();
-      }
+        }
 
+        var HvorBegynderMarkering = selectedText.anchorOffset;
+        var HvorSlutterMarkering = selectedText.extentOffset;
+        
+        console.table([HvorBegynderMarkering, HvorSlutterMarkering])       
+     
+        
       return selectedText;
     }
     //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
