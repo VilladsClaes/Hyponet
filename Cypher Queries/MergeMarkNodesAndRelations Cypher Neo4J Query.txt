@@ -1,0 +1,14 @@
+Disse to sæt queries, efter hinanden, merger først ens-lydende marknoder der udspringer fra en node med et givent ID. 
+Dernæst samler den relationerne til de mergede noder, tsammen til 1.
+
+
+MATCH (n:MARK)<-[:Mark]-(m) WHERE ID(m)=303
+WITH n.name AS name, COLLECT(n) AS nodelist, COUNT(*) AS count
+WHERE count > 1
+CALL apoc.refactor.mergeNodes(nodelist) YIELD node
+
+MATCH (n:MARK)<-[r:Mark]-(m) WHERE ID(m)=303
+WITH n.name AS name, COLLECT(r) as rels, COUNT(*) AS count
+CALL apoc.refactor.mergeRelationships(rels) YIELD rel
+MATCH (n:MARK)<-[r:Mark]-(m) WHERE ID(m)=303
+RETURN rel

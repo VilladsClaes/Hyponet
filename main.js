@@ -36,9 +36,7 @@ $(function () {
     localStorage.setItem("indtastninger", helehjemmesiden);
     //Skriv JSON
     localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
-    //Erstat HTML med det fra localstorage
   }
-
 
   function FjernAltIDOM() {
     //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
@@ -211,15 +209,12 @@ $(function () {
   function SendSpecNode(markNodeOrigin) {
     //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
     var kunDenEneGang = true;
-
     $(".greenbox").keypress(async function (e) {
       if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
         console.log("ENTER i .greenbox")
         e.preventDefault();
-
-        var resultObject = await CreateSpecNode(e.currentTarget);
-        // SetBoxId(resultObject);
-        CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+        var resultObject = await SpecNodeCreation(e, markNodeOrigin);
+        AssNodeCreation(resultObject, markNodeOrigin);
         e.currentTarget.removeAttribute("contenteditable")
         kunDenEneGang = false;
       }
@@ -229,10 +224,8 @@ $(function () {
       FjernMarkTag(e);
       if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
         console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
-
-        var resultObject = await CreateSpecNode(e.currentTarget);
-        // SetBoxId(resultObject);
-        CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+        var resultObject = await SpecNodeCreation(e, markNodeOrigin)
+        AssNodeCreation(resultObject, markNodeOrigin);
         e.currentTarget.removeAttribute("contenteditable");
         kunDenEneGang = false;
       }
@@ -254,7 +247,7 @@ $(function () {
 
   async function MarkNodeCreation(selectedText, domElement) {
     var resultObject = await CreateMarkNode(selectedText, domElement);
-    var selectionObject =  SurroundSelectedTextWithMarkTag(resultObject);
+    var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
     SetBoxId(selectionObject);
     await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
     CreateGreenBox(domElement, selectionObject);
@@ -262,23 +255,53 @@ $(function () {
 
 
   //Send indhold til neo4j om at oprette en marknode
-  async function CreateMarkNode(selectedText, node) {
+  async function CreateMarkNode(selectedText, domElement) {
     var nodeType = "MARK";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, node);
+    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
   }
 
+
+  async function SpecNodeCreation(e, markNodeOrigin) {
+    var resultObject = await CreateSpecNode(e.currentTarget);
+    SetBoxId(resultObject);
+    CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+    return resultObject;
+  }
 
   //Send indhold til neo4j om at oprette en Spec-node
   async function CreateSpecNode(greenBoxElement) {
     var nodeType = "SPEC";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
-    var specNodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
-    SetBoxId(specNodeResult);
-    return specNodeResult;
+    var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
+    return nodeResult;
   }
 
+
+  async function AssNodeCreation(fromResultObject, markResultObject) {
+    var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
+    CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
+    // CreateRelation(resultObject.node, nodeToRelateTo);
+    /* for (let nodeIndex = 0; nodeIndex < NoderMedSammeIndhold.length; nodeIndex++) {
+       const nodeToRelateTo = NoderMedSammeIndhold[nodeIndex];
+       CreateRelation(resultObject.node, nodeToRelateTo)
+     };*/
+
+    //CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
+  }
+  //Lav en Associationsnode
+  async function CreateAssNode(fromElement, selectedText) {
+    var nodeType = "ASS";
+    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
+    var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
+    console.log("der er lavet en ASS-node " + "%c" + nodeResult.node.id, "color:purple;")
+    return nodeResult;
+  };
+
+  async function FindNodesToAssTo(fromNode) {
+    var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
+  }
 
   function CreateRelation(fromNodeId, toNodeId, relationType) {
     var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
@@ -327,24 +350,8 @@ $(function () {
   //Send grundnode afsted
   SendGrundNode()
 
-  //Byg en associations-relation fra Associationsnoden til alle de noder (SPEC/ROD) med samme indhold
-  function LavEnAssRel(ASSNoden, NoderMedSammeIndhold) {
-    for (let Noder = 0; Noder < NoderMedSammeIndhold.length; Noder++) {
-      const NodeAtLaveRelationTil = NoderMedSammeIndhold[Noder];
-    };
-  }
 
 
-  //Lav en Associationsnode
-  function LavEnAssNode(CurrentMARKNode, NoderMedSammeIndhold, FraNoden) {
-    //HER SKAL VÆRE ET APIKALD SOM OPRETTER EN NODE AF TYPEN ASS
-    //  "MERGE (n:ASS {name:CurrentMARKNode.MarkNodensName}) SET n.creationTime = timestamp() RETURN n.creationTime, n.name, ID(n), labels(n)", {
-    console.log("der er lavet en association til ASSNoden " + "%c" +
-      ASSNoden.ASSNodensID, "color:purple;")
-    //Lav ASS-rel til relevante noder
-    LavEnAssRel(ASSNoden, NoderMedSammeIndhold)
-    CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
-  };
 
   //Marker tekst i tekstfeltet
   function SelectTextFromWindow(event) {
