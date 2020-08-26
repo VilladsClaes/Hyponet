@@ -246,12 +246,18 @@ $(function () {
   };
 
   async function MarkNodeCreation(selectedText, domElement) {
+    let selectedTextAnchorOffset = selectedText.anchorOffset;
+    let selectedTextFocusOffset = selectedText.focusOffset;
     var resultObject = await CreateMarkNode(selectedText, domElement);
     var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
     SetBoxId(selectionObject);
     await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+    await MergeMarkNodes(selectedText, domElement, selectedTextAnchorOffset, selectedTextFocusOffset);
+
     CreateGreenBox(domElement, selectionObject);
   }
+
+
 
 
   //Send indhold til neo4j om at oprette en marknode
@@ -266,6 +272,20 @@ $(function () {
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + rangeStart + "/" + rangeEnd;
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
+  }
+
+  async function MergeMarkNodes(selectedText, domElement, selectedTextAnchorOffset, selectedTextFocusOffset) {
+    var nodeType = "MARK";
+    var rangeStart = selectedTextAnchorOffset;
+    var rangeEnd = selectedText.focusOffset;
+    if (selectedText.anchorOffset > selectedText.focusOffset) {
+      rangeStart = selectedTextAnchorOffset;
+      rangeEnd = selectedTextFocusOffset;
+    }
+    var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + rangeStart + "/" + rangeEnd;
+    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+    return nodeResult;
+
   }
 
 
@@ -447,11 +467,11 @@ $(function () {
     //marknodens ID - egenskab fra objekt
     console.table([resultObject.node]);
     var selection = x.Selector.getSelected();
-    var selection = selection.getRangeAt(0)
+    var selectionRange = selection.getRangeAt(0);
     var newMarkElement = document.createElement("mark");
     resultObject.element = newMarkElement;
-    selection.surroundContents(newMarkElement)
-    console.log("markering på: " + selection.toString());
+    selectionRange.surroundContents(newMarkElement);
+    console.log("markering på: " + selectionRange.toString());
     return resultObject;
   }
 
@@ -463,7 +483,7 @@ $(function () {
     console.log(DenNodeMarkSkalFjernesFra.currentTarget.childElementCount)
     if (DenNodeMarkSkalFjernesFra.currentTarget.childElementCount > 0) {
       let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.target.id)
-        .getElementsByTagName('mark');
+        .getElementsByTagName("mark");
       while (marktag.length) {
         let parent = marktag[0].parentNode;
         while (marktag[0].firstChild) {
