@@ -257,7 +257,13 @@ $(function () {
   //Send indhold til neo4j om at oprette en marknode
   async function CreateMarkNode(selectedText, domElement) {
     var nodeType = "MARK";
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
+    var rangeStart = selectedText.anchorOffset;
+    var rangeEnd = selectedText.focusOffset;
+    if (selectedText.anchorOffset > selectedText.focusOffset) {
+      rangeStart = selectedText.focusOffset;
+      rangeEnd = selectedText.anchorOffset;
+    }
+    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + rangeStart + "/" + rangeEnd;
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
   }
