@@ -275,37 +275,27 @@ $(function () {
         return { start: start, end: end };
     }
 
-    //function reportSelection() {
-    //    var selOffsets = getSelectionCharacterOffsetWithin(document.getElementById("editor"));
-    //    document.getElementById("selectionLog").innerHTML = "Selection offsets: " + selOffsets.start + ", " + selOffsets.end;
-    //}
-
-    //window.onload = function () {
-    //    document.addEventListener("selectionchange", reportSelection, false);
-    //    document.addEventListener("mouseup", reportSelection, false);
-    //    document.addEventListener("mousedown", reportSelection, false);
-    //    document.addEventListener("keyup", reportSelection, false);
-    //};
-
-
-
-
+    
        async function MarkNodeCreation(selectedText, domElement) {
        
-        var selOffsets = getSelectionCharacterOffsetWithin(domElement)
-           console.log("Markering fra bogstav: " + selOffsets.start + " til bogstav " + selOffsets.end);
 
-        
-        var resultObject = await CreateMarkNode(selectedText, domElement);
-           var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
+           var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+           var start = selOffsets.start;
+           var end = selOffsets.end;
+           console.log("Markering fra bogstav: " + start + " til bogstav " + end);
 
-           SetBoxId(selectionObject);
-           //domelement er boksen den er lavet i. 
-           //selectionobject er markeringen
-        await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
-           await MergeMarkNodes(selectedText, domElement, selOffsets.start, selOffsets.end);
+            //Resultobject indeholder: element og node
+            var resultObject = await CreateMarkNode(selectedText, domElement);
+            var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
 
-        CreateGreenBox(domElement, selectionObject);
+            SetBoxId(selectionObject);
+            //domelement er boksen den er lavet i. 
+            //selectionobject er markeringen
+            await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+
+            await MergeMarkNodes(selectedText, domElement, start, end);
+
+            CreateGreenBox(domElement, selectionObject);
       }
 
 
