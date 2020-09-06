@@ -289,11 +289,12 @@ $(function () {
             var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
 
             SetBoxId(selectionObject);
-            //domelement er boksen den er lavet i. 
+            //domelement er boksen den er lavet i, ROOT eller SPEC. 
             //selectionobject er markeringen
-            await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+            await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
 
-            await MergeMarkNodes(selectedText, domElement, start, end);
+           //await MergeMarkNodes(selectedText, domElement, start, end);
+           await MergeMarkNodes(selectionObject.node.name, selectionObject.node.id, start, end);
 
             CreateGreenBox(domElement, selectionObject);
       }
@@ -309,12 +310,14 @@ $(function () {
         var nodeType = "MARK";
 
         var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+        var start = selOffsets.start;
+        var end = selOffsets.end;
       
 
 
    
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + selOffsets.start + "/" + selOffsets.end;
-      var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end;
+        var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
 
      
 
@@ -322,10 +325,8 @@ $(function () {
   }
 
   async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
-    var nodeType = "MARK";
-      
-
-      var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd;
+    var nodeType = "MARK";     
+    var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd;
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
 
@@ -335,7 +336,7 @@ $(function () {
   async function SpecNodeCreation(e, markNodeOrigin) {
     var resultObject = await CreateSpecNode(e.currentTarget);
     SetBoxId(resultObject);
-    CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+    await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
     return resultObject;
   }
 
@@ -372,9 +373,10 @@ $(function () {
     var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
   }
 
-  function CreateRelation(fromNodeId, toNodeId, relationType) {
-    var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
-    httpGetAsync(apiEndpointUrl);
+  async function CreateRelation(fromNodeId, toNodeId, relationType) {
+      var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
+      var nodeResult = await httpGetAsync(apiEndpointUrl);
+      return nodeResult;    
   }
 
 
@@ -507,7 +509,8 @@ $(function () {
   //Hent ID fra neo4j til den samme mark-opmærkning som netop er oprettet
   function SurroundSelectedTextWithMarkTag(resultObject) {
     //marknodens ID - egenskab fra objekt
-    console.table([resultObject.node]);
+    //console.table([resultObject.node]);
+
     var selection = x.Selector.getSelected();
     var selectionRange = selection.getRangeAt(0);
     var newMarkElement = document.createElement("mark");
