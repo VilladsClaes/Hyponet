@@ -245,44 +245,97 @@ $(function () {
     return nodeResult;
   };
 
-  async function MarkNodeCreation(selectedText, domElement) {
-    let selectedTextAnchorOffset = selectedText.anchorOffset;
-    let selectedTextFocusOffset = selectedText.focusOffset;
-    var resultObject = await CreateMarkNode(selectedText, domElement);
-    var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
-    SetBoxId(selectionObject);
-    await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
-    await MergeMarkNodes(selectedText, domElement, selectedTextAnchorOffset, selectedTextFocusOffset);
+    //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
+    function getSelectionCharacterOffsetWithin(element) {
+        var start = 0;
+        var end = 0;
+        var doc = element.ownerDocument || element.document;
+        var win = doc.defaultView || doc.parentWindow;
+        var sel;
+        if (typeof win.getSelection != "undefined") {
+            sel = win.getSelection();
+            if (sel.rangeCount > 0) {
+                var range = win.getSelection().getRangeAt(0);
+                var preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.startContainer, range.startOffset);
+                start = preCaretRange.toString().length;
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                end = preCaretRange.toString().length;
+            }
+        } else if ((sel = doc.selection) && sel.type != "Control") {
+            var textRange = sel.createRange();
+            var preCaretTextRange = doc.body.createTextRange();
+            preCaretTextRange.moveToElementText(element);
+            preCaretTextRange.setEndPoint("EndToStart", textRange);
+            start = preCaretTextRange.text.length;
+            preCaretTextRange.setEndPoint("EndToEnd", textRange);
+            end = preCaretTextRange.text.length;
+        }
+        return { start: start, end: end };
+    }
 
-    CreateGreenBox(domElement, selectionObject);
-  }
+    //function reportSelection() {
+    //    var selOffsets = getSelectionCharacterOffsetWithin(document.getElementById("editor"));
+    //    document.getElementById("selectionLog").innerHTML = "Selection offsets: " + selOffsets.start + ", " + selOffsets.end;
+    //}
+
+    //window.onload = function () {
+    //    document.addEventListener("selectionchange", reportSelection, false);
+    //    document.addEventListener("mouseup", reportSelection, false);
+    //    document.addEventListener("mousedown", reportSelection, false);
+    //    document.addEventListener("keyup", reportSelection, false);
+    //};
+
+
+
+
+       async function MarkNodeCreation(selectedText, domElement) {
+       
+        var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+           console.log("Markering fra bogstav: " + selOffsets.start + " til bogstav " + selOffsets.end);
+
+        
+        var resultObject = await CreateMarkNode(selectedText, domElement);
+           var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
+
+           SetBoxId(selectionObject);
+           //domelement er boksen den er lavet i. 
+           //selectionobject er markeringen
+        await CreateRelation(domElement.id, selectionObject.element.id, "Mark");
+           await MergeMarkNodes(selectedText, domElement, selOffsets.start, selOffsets.end);
+
+        CreateGreenBox(domElement, selectionObject);
+      }
+
 
 
 
 
   //Send indhold til neo4j om at oprette en marknode
-  async function CreateMarkNode(selectedText, domElement) {
-    var nodeType = "MARK";
-    var rangeStart = selectedText.anchorOffset;
-    var rangeEnd = selectedText.focusOffset;
-    if (selectedText.anchorOffset > selectedText.focusOffset) {
-      rangeStart = selectedText.focusOffset;
-      rangeEnd = selectedText.anchorOffset;
-    }
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + rangeStart + "/" + rangeEnd;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+    async function CreateMarkNode(selectedText, domElement) {
+     
+
+        var nodeType = "MARK";
+
+        var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+      
+
+
+   
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + selOffsets.start + "/" + selOffsets.end;
+      var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+
+     
+
     return nodeResult;
   }
 
-  async function MergeMarkNodes(selectedText, domElement, selectedTextAnchorOffset, selectedTextFocusOffset) {
+  async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
     var nodeType = "MARK";
-    var rangeStart = selectedTextAnchorOffset;
-    var rangeEnd = selectedText.focusOffset;
-    if (selectedText.anchorOffset > selectedText.focusOffset) {
-      rangeStart = selectedTextAnchorOffset;
-      rangeEnd = selectedTextFocusOffset;
-    }
-    var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + rangeStart + "/" + rangeEnd;
+      
+
+      var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd;
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
 
@@ -397,8 +450,7 @@ $(function () {
       return selectedText;
     }
     //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-    if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString() !=
-        '.')) {
+    if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString() !='.')) {
 
 
       //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
@@ -496,6 +548,7 @@ $(function () {
       console.log("Der er ingen mark-tag i denne node");
     }
   }
+
 
 
 
