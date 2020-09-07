@@ -245,59 +245,58 @@ $(function () {
     return nodeResult;
   };
 
-    //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
-    function getSelectionCharacterOffsetWithin(element) {
-        var start = 0;
-        var end = 0;
-        var doc = element.ownerDocument || element.document;
-        var win = doc.defaultView || doc.parentWindow;
-        var sel;
-        if (typeof win.getSelection != "undefined") {
-            sel = win.getSelection();
-            if (sel.rangeCount > 0) {
-                var range = win.getSelection().getRangeAt(0);
-                var preCaretRange = range.cloneRange();
-                preCaretRange.selectNodeContents(element);
-                preCaretRange.setEnd(range.startContainer, range.startOffset);
-                start = preCaretRange.toString().length;
-                preCaretRange.setEnd(range.endContainer, range.endOffset);
-                end = preCaretRange.toString().length;
-            }
-        } else if ((sel = doc.selection) && sel.type != "Control") {
-            var textRange = sel.createRange();
-            var preCaretTextRange = doc.body.createTextRange();
-            preCaretTextRange.moveToElementText(element);
-            preCaretTextRange.setEndPoint("EndToStart", textRange);
-            start = preCaretTextRange.text.length;
-            preCaretTextRange.setEndPoint("EndToEnd", textRange);
-            end = preCaretTextRange.text.length;
+  //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
+  function getSelectionCharacterOffsetWithin(element) {
+    var start = 0;
+    var end = 0;
+    var doc = element.ownerDocument || element.document;
+    var win = doc.defaultView || doc.parentWindow;
+    var sel;
+    if (typeof win.getSelection != "undefined") {
+        sel = win.getSelection();
+        if (sel.rangeCount > 0) {
+            var range = win.getSelection().getRangeAt(0);
+            var preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(element);
+            preCaretRange.setEnd(range.startContainer, range.startOffset);
+            start = preCaretRange.toString().length;
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            end = preCaretRange.toString().length;
         }
-        return { start: start, end: end };
+    } else if ((sel = doc.selection) && sel.type != "Control") {
+        var textRange = sel.createRange();
+        var preCaretTextRange = doc.body.createTextRange();
+        preCaretTextRange.moveToElementText(element);
+        preCaretTextRange.setEndPoint("EndToStart", textRange);
+        start = preCaretTextRange.text.length;
+        preCaretTextRange.setEndPoint("EndToEnd", textRange);
+        end = preCaretTextRange.text.length;
     }
+    return { start: start, end: end };
+  }
 
     
-       async function MarkNodeCreation(selectedText, domElement) {
-       
+  async function MarkNodeCreation(selectedText, domElement) {       
 
-           var selOffsets = getSelectionCharacterOffsetWithin(domElement)
-           var start = selOffsets.start;
-           var end = selOffsets.end;
-           console.log("Markering fra bogstav: " + start + " til bogstav " + end);
+    var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+    var start = selOffsets.start;
+    var end = selOffsets.end;
+    console.log("Markering fra bogstav: " + start + " til bogstav " + end);
 
-            //Resultobject indeholder: element og node
-            var resultObject = await CreateMarkNode(selectedText, domElement);
-            var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
+    //Resultobject indeholder: element og node
+    var resultObject = await CreateMarkNode(selectedText, domElement);
+    var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
 
-            SetBoxId(selectionObject);
-            //domelement er boksen den er lavet i, ROOT eller SPEC. 
-            //selectionobject er markeringen
-            await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
+    SetBoxId(selectionObject);
+    //domelement er boksen den er lavet i, ROOT eller SPEC. 
+    //selectionobject er markeringen
+    await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
 
-           //await MergeMarkNodes(selectedText, domElement, start, end);
-           await MergeMarkNodes(selectionObject.node.name, selectionObject.node.id, start, end);
+    await MergeMarkNodes(selectedText, domElement, start, end);
+    //await MergeMarkNodes(selectionObject.node.name, selectionObject.node.id, start, end);
 
-            CreateGreenBox(domElement, selectionObject);
-      }
+    CreateGreenBox(domElement, selectionObject);
+  }
 
 
 
@@ -325,8 +324,8 @@ $(function () {
   }
 
   async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
-    var nodeType = "MARK";     
-    var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd;
+      var nodeType = "MARK";
+      var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
     return nodeResult;
 
