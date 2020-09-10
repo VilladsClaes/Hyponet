@@ -59,71 +59,78 @@ $(function () {
 
     //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
     if (document.getElementsByClassName("redbox")[0] = undefined) {
-      console.log("der er ingen redboxes i vindues")
+      //console.log("der er ingen redboxes i vindues")
       let newConversation = document.createElement("div");
       newConversation.attr("id", "conversation");
       newConversation.attr("class", "container-fluid");
       document.getElementById("NyGrundNodeKnap").append(newConversation)
-    } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
+    }
+    else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap")
+    {
       $(redBox).insertBefore(e.currentTarget);
       SendGrundNode()
-    } else if (e.currentTarget.id == "NyGrundNodeKnap") {
+    }
+    else if (e.currentTarget.id == "NyGrundNodeKnap")
+    {
       $("#conversation").prepend(redBox);
       SendGrundNode()
     }
   }
 
-  function CreateGreenBox(fromBox, resultObject) {
+  function CreateGreenBox(domElement, resultObject)
+  {
     var greenBox = document.createElement("p");
     $(greenBox).attr("contenteditable", "true");
     $(greenBox).addClass("greenbox");
-    console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
-    var parentElement = document.getElementById(fromBox.id);
+    //console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
+        var parentElement = document.getElementById(domElement.id);
     DrawSpeechBubble(parentElement, greenBox, resultObject);
     SendSpecNode(resultObject);
   }
 
-  function DrawSpeechBubble(fromBox, greenBox, resultObject) {
-    //Lav en omgivende ramme
-    var svgFrame = document.createElement('div');
-    //Definér det der skal indsættes
-    var svgHtml = "<svg><polyline id='pilTilMark" + resultObject.node.id +
-      "' class='pil' points=''/> <polyline id='bundTilPil" + resultObject.node.id +
-      "' class='pil' points=''/> </svg>";
+  function DrawSpeechBubble(domElement, greenBox, resultObject)
+  {
+            //Lav en omgivende ramme
+        var svgFrame = document.createElement('div');
+        //Definér det der skal indsættes
+        var svgHtml = "<svg><polyline id='pilTilMark" + resultObject.node.id +
+            "' class='pil' points=''/> <polyline id='bundTilPil" + resultObject.node.id +
+            "' class='pil' points=''/> </svg>";
 
-    //indsæt element i omgivende ramme
-    svgFrame.innerHTML = svgHtml;
-    //indsæt p-elementet fra LavEnUddybningsboks til denne svg
-    svgFrame.appendChild(greenBox);
+        //indsæt element i omgivende ramme
+        svgFrame.innerHTML = svgHtml;
+        //indsæt p-elementet fra LavEnUddybningsboks til denne svg
+        svgFrame.appendChild(greenBox);
 
-    //Hvis markering foregår i redbox
-    if (fromBox.parentElement == $("p.redbox")) {
-      console.log("Uddybningsboks udspringer fra grundnode");
-      document.getElementsByClassName("greenbox").append(svgFrame);
-    } else {
-      $(svgFrame).insertAfter(fromBox);
-    }
+        //Hvis markering foregår i redbox
+        if (domElement.parentElement == $("p.redbox"))
+        {
+            console.log("Uddybningsboks udspringer fra grundnode");
+            document.getElementsByClassName("greenbox").append(svgFrame);
+        }
+        else
+        {
+            $(svgFrame).insertAfter(domElement);
+        }
 
-    //Find markeringens x og y-koordinater
-    var selection = document.getElementById(resultObject.node.id).getBoundingClientRect();
-    //Find uddybningsfeltets x og y-koordinator
-    var specification = greenBox.getBoundingClientRect();
-    var arrow = document.getElementById("pilTilMark" + resultObject.node.id);
-    var bottomArrow = document.getElementById("bundTilPil" + resultObject.node.id);
-    var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
-    var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
-    var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
-    //var coordsBottom = 
-    //var lengthSideBottom = Math.sqrt((Math.pow(parseInt(specification.width / 4), 2) - Math.pow(parseInt(specification.width / 3)), 2)) + (Math.pow(parseInt(21), 2) - Math.pow(parseInt(21), 2));
-    //Placering af taleboblepilens to ben og spids
-    arrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesOfArrowTip + " " +
-      coordinatesArrowRight + " " + coordinatesArrowLeft);
-    var coordinatesBottomRight = parseInt((specification.width - 1.5) / 3) + "," + parseInt(21);
-    bottomArrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesBottomRight);
-    bottomArrow.setAttributeNS(null, "style", "stroke:#90ee90;stroke-width:1.5;stroke-linecap:round");
-    console.log("Taleboblens pil har følgende koordinater:");
-    console.log(arrow.getAttributeNS(null, "points"));
-
+        //Find markeringens x og y-koordinater
+        var selection = document.getElementById(resultObject.node.id).getBoundingClientRect();
+        //Find uddybningsfeltets x og y-koordinator
+        var specification = greenBox.getBoundingClientRect();
+        var arrow = document.getElementById("pilTilMark" + resultObject.node.id);
+        var bottomArrow = document.getElementById("bundTilPil" + resultObject.node.id);
+        var coordinatesArrowLeft = parseInt(specification.width / 4) + "," + parseInt(21); //Først sæt: x,y for tekstboks overkant
+        var coordinatesOfArrowTip = parseInt(selection.x + (selection.width / 2)) + "," + parseInt(-20); //Andet sæt: x,y for mark-tag
+        var coordinatesArrowRight = parseInt(specification.width / 3) + "," + parseInt(21); //Tredje sæt: x,y for tekstboks overkant
+        //var coordsBottom = 
+        //var lengthSideBottom = Math.sqrt((Math.pow(parseInt(specification.width / 4), 2) - Math.pow(parseInt(specification.width / 3)), 2)) + (Math.pow(parseInt(21), 2) - Math.pow(parseInt(21), 2));
+        //Placering af taleboblepilens to ben og spids
+        arrow.setAttributeNS(null, "points", coordinatesArrowLeft+" "+coordinatesOfArrowTip+" "+coordinatesArrowRight+" "+coordinatesArrowLeft);
+        var coordinatesBottomRight = parseInt((specification.width - 1.5) / 3) + "," + parseInt(21);
+        bottomArrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesBottomRight);
+        bottomArrow.setAttributeNS(null, "style", "stroke:#90ee90;stroke-width:1.5;stroke-linecap:round");
+        console.log("Taleboblens pil har følgende koordinater:");
+        console.log(arrow.getAttributeNS(null, "points"));
   }
 
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
@@ -205,56 +212,67 @@ $(function () {
 
   })
 
+      // markNodeOrigin er den marknode som specnoden kommer fra
+  function SendSpecNode(MARKOrigin) {
 
-  function SendSpecNode(markNodeOrigin) {
-    //Hvis man bruger musen i et grønt felt som IKKE er tomt, så skal den sende til databasen
+    //Hvis man bruger ENTER eller museklik i et grønt felt som IKKE er tomt, så skal den sende til databasen
     var kunDenEneGang = true;
-    $(".greenbox").keypress(async function (e) {
-      if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
-        console.log("ENTER i .greenbox")
-        e.preventDefault();
-        var resultObject = await SpecNodeCreation(e, markNodeOrigin);
-        AssNodeCreation(resultObject, markNodeOrigin);
-        e.currentTarget.removeAttribute("contenteditable")
-        kunDenEneGang = false;
-      }
-    });
+      $(".greenbox").keypress(async function (e)
+      {
+          if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "")
+          {
+            //console.log("ENTER i .greenbox")
+            e.preventDefault();
+            var resultObject = await SpecNodeCreation(e, MARKOrigin);
+            AssNodeCreation(resultObject, MARKOrigin);
+            e.currentTarget.removeAttribute("contenteditable")
+            kunDenEneGang = false;
+           }
+      });
 
-    $("body").on("mousedown", ".greenbox", async function (e) {
-      FjernMarkTag(e);
-      if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
-        console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
-        var resultObject = await SpecNodeCreation(e, markNodeOrigin)
-        AssNodeCreation(resultObject, markNodeOrigin);
-        e.currentTarget.removeAttribute("contenteditable");
-        kunDenEneGang = false;
-      }
-    });
+      $("body").on("mousedown", ".greenbox", async function (e)
+      {
+         FjernMarkTag(e);
+          if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "")
+          {
+            //console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
+            var resultObject = await SpecNodeCreation(e, MARKOrigin)
+            AssNodeCreation(resultObject, MARKOrigin);
+            e.currentTarget.removeAttribute("contenteditable");
+            kunDenEneGang = false;
+          }
+      });
   }
 
-  async function RootNodeCreation(e) {
-    var rootNodeResult = await CreateRootNode(e);
-    SetBoxId(rootNodeResult);
-  }
+  async function RootNodeCreation(e)
+    {
+      var rootNodeResult = await CreateRootNode(e);
+      SetBoxId(rootNodeResult);
+    }
 
   //Send indhold til neo4j om at oprette en grundnode
-  async function CreateRootNode(e) {
-    var nodeType = "ROOT";
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
-    return nodeResult;
+  async function CreateRootNode(e)
+  {
+        var nodeType = "ROOT";
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
+        var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
+        return nodeResult;
   };
 
   //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
-  function getSelectionCharacterOffsetWithin(element) {
+  function getSelectionCharacterOffsetWithin(element)
+  {
     var start = 0;
     var end = 0;
     var doc = element.ownerDocument || element.document;
     var win = doc.defaultView || doc.parentWindow;
     var sel;
-    if (typeof win.getSelection != "undefined") {
+
+    if (typeof win.getSelection != "undefined")
+    {
         sel = win.getSelection();
-        if (sel.rangeCount > 0) {
+        if (sel.rangeCount > 0)
+        {
             var range = win.getSelection().getRangeAt(0);
             var preCaretRange = range.cloneRange();
             preCaretRange.selectNodeContents(element);
@@ -263,7 +281,9 @@ $(function () {
             preCaretRange.setEnd(range.endContainer, range.endOffset);
             end = preCaretRange.toString().length;
         }
-    } else if ((sel = doc.selection) && sel.type != "Control") {
+    }
+    else if ((sel = doc.selection) && sel.type != "Control")
+    {
         var textRange = sel.createRange();
         var preCaretTextRange = doc.body.createTextRange();
         preCaretTextRange.moveToElementText(element);
@@ -273,6 +293,7 @@ $(function () {
         end = preCaretTextRange.text.length;
     }
     return { start: start, end: end };
+
   }
 
     
@@ -323,44 +344,53 @@ $(function () {
     return nodeResult;
   }
 
-  async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
+    async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd)
+    {
       var nodeType = "MARK";
       var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
-    return nodeResult;
+      var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+      return nodeResult;
+    }
 
-  }
 
-
-  async function SpecNodeCreation(e, markNodeOrigin) {
-    var resultObject = await CreateSpecNode(e.currentTarget);
-    SetBoxId(resultObject);
-    await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
-    return resultObject;
-  }
+    async function SpecNodeCreation(e, markNodeOrigin)
+    {
+        var resultObject = await CreateSpecNode(e.currentTarget);
+        SetBoxId(resultObject);
+        await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+        return resultObject;
+    }
 
   //Send indhold til neo4j om at oprette en Spec-node
-  async function CreateSpecNode(greenBoxElement) {
-    var nodeType = "SPEC";
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
-    return nodeResult;
-  }
+    async function CreateSpecNode(greenBoxElement)
+    {
+        var nodeType = "SPEC";
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
+        var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
+        return nodeResult;
+    }
 
 
-  async function AssNodeCreation(fromResultObject, markResultObject) {
-    var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
-    CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
-    // CreateRelation(resultObject.node, nodeToRelateTo);
-    /* for (let nodeIndex = 0; nodeIndex < NoderMedSammeIndhold.length; nodeIndex++) {
-       const nodeToRelateTo = NoderMedSammeIndhold[nodeIndex];
-       CreateRelation(resultObject.node, nodeToRelateTo)
-     };*/
+    async function AssNodeCreation(fromResultObject, markResultObject)
+    {
+        var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
+        CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
 
-    //CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
-  }
+        // CreateRelation(resultObject.node, nodeToRelateTo);
+        /* 
+           for (let nodeIndex = 0; nodeIndex < NoderMedSammeIndhold.length; nodeIndex++) 
+           {
+               const nodeToRelateTo = NoderMedSammeIndhold[nodeIndex];
+               CreateRelation(resultObject.node, nodeToRelateTo)
+           };
+         */
+
+        //CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
+    }
+
   //Lav en Associationsnode
-  async function CreateAssNode(fromElement, selectedText) {
+  async function CreateAssNode(fromElement, selectedText)
+  {
     var nodeType = "ASS";
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
     var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
@@ -368,11 +398,13 @@ $(function () {
     return nodeResult;
   };
 
-  async function FindNodesToAssTo(fromNode) {
+  async function FindNodesToAssTo(fromNode)
+  {
     var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
   }
 
-  async function CreateRelation(fromNodeId, toNodeId, relationType) {
+  async function CreateRelation(fromNodeId, toNodeId, relationType)
+  {
       var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
       var nodeResult = await httpGetAsync(apiEndpointUrl);
       return nodeResult;    
@@ -380,36 +412,40 @@ $(function () {
 
 
   //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
-  function SetBoxId(resultObject) {
-    console.log(resultObject.element);
+  function SetBoxId(resultObject)
+  {
+    //console.log(resultObject.element);
     $(resultObject.element).attr("id", resultObject.node.id)
   }
 
 
   //Åbner ajax-api-xmlhttprequest-xhr
-  function httpGetAsync(theUrl, htmlElement) {
-    return new Promise(function (resolve, reject) {
-      var xmlHttp = new XMLHttpRequest();
-      var element = htmlElement;
-      xmlHttp.onreadystatechange = async function () {
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-          console.log("readystate = 4: " + xmlHttp.responseText);
-          var jsonResult = await JSON.parse(xmlHttp.responseText);
-          var resultObject = {
-            node: jsonResult,
-            element: element
+  function httpGetAsync(theUrl, htmlElement)
+  {
+      return new Promise(function (resolve, reject)
+      {
+        var xmlHttp = new XMLHttpRequest();
+        var element = htmlElement;
+          xmlHttp.onreadystatechange = async function ()
+          {
+              if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+              {
+                console.log("readystate = 4: " + xmlHttp.responseText);
+                 var jsonResult = await JSON.parse(xmlHttp.responseText);
+                 var resultObject = {node: jsonResult,element: element}
+                 resolve(resultObject);
+                 return resultObject;
+              }
+              else
+              {
+                console.log("rejected at readystate = " + xmlHttp.readyState);
+                //reject("REJECT");
+              }
           }
-          resolve(resultObject);
-          return resultObject;
-        } else {
-          console.log("rejected at readystate = " + xmlHttp.readyState);
-          //reject("REJECT");
-        }
-      }
-      xmlHttp.open("GET", theUrl, true); // true for asynchronous
-      xmlHttp.send();
+          xmlHttp.open("GET", theUrl, true); // true for asynchronous
+          xmlHttp.send();
 
-    })
+      })
   }
 
   //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
@@ -424,83 +460,100 @@ $(function () {
 
 
   //Marker tekst i tekstfeltet
-  function SelectTextFromWindow(event) {
+  function SelectTextFromWindow(event)
+  {
     var selectedText = '';
-    var NodeWhichIsSelected = event.target;
-    if (!window.x) {
-      console.log("Objekt til at gemme markering i laves")
-      x = {};
+    var domElement = event.target;
+    if (!window.x)
+    {
+        console.log("Objekt til at gemme markering i laves")
+        x = {};
     }
     x.Selector = {};
-    x.Selector.getSelected = function () {
+    x.Selector.getSelected = function ()
+    {
 
-      if (window.getSelection) {
+      if (window.getSelection)
+      {
         selectedText = window.getSelection();
       }
 
       return selectedText;
     }
-    //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-    if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString() !='.')) {
 
+    //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
+    if ((x.Selector.getSelected().toString().trim() != ' ') && (x.Selector.getSelected().toString() != '.'))
+    {
 
       //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
       //!!!!!!!!!!!!!!!!!IMPLEMENTER FØRST NÅR SNAPSELECTION KUN KØRES HVIS DET ORD MAN MARKERER KUN HAR ÉT TEGN FORAN ELLER BAGVED INDEN WHITESPACE
       // snapSelectionToWord(selectedText)
 
       //Send indholdet, hvis man har glemt at trykke ENTER
-      MarkNodeCreation(selectedText, NodeWhichIsSelected)
+        MarkNodeCreation(selectedText, domElement)
     };
   }
 
-  function snapSelectionToWord(selectedText) { //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 2 characters tilbare af ordet
-    var sel;
+    //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 2 characters tilbare af ordet
+    function snapSelectionToWord(selectedText)
+    {
+        
+        var sel;
 
-    // Check for existence of window.getSelection() and that it has a
-    // modify() method. IE 9 has both selection APIs but no modify() method.
-    if (selectedText && (sel = window.getSelection()).modify) {
-      sel = selectedText;
-      if (!sel.isCollapsed) {
+        // Check for existence of window.getSelection() and that it has a
+        // modify() method. IE 9 has both selection APIs but no modify() method.
+        if (selectedText && (sel = window.getSelection()).modify)
+        {
+          sel = selectedText;
+            if (!sel.isCollapsed)
+            {
 
-        // Detect if selection is backwards
-        var range = document.createRange();
-        range.setStart(sel.anchorNode, sel.anchorOffset);
-        range.setEnd(sel.focusNode, sel.focusOffset);
-        var backwards = range.collapsed;
-        range.detach();
+                // Detect if selection is backwards
+                var range = document.createRange();
+                range.setStart(sel.anchorNode, sel.anchorOffset);
+                range.setEnd(sel.focusNode, sel.focusOffset);
+                var backwards = range.collapsed;
+                range.detach();
 
-        // modify() works on the focus of the selection
-        var endNode = sel.focusNode,
-          endOffset = sel.focusOffset;
-        sel.collapse(sel.anchorNode, sel.anchorOffset);
-        if (backwards) {
-          sel.modify("move", "backward", "character");
-          sel.modify("move", "forward", "word");
-          sel.extend(endNode, endOffset);
-          sel.modify("extend", "forward", "character");
-          sel.modify("extend", "backward", "word");
+                // modify() works on the focus of the selection
+                var endNode = sel.focusNode,
+                  endOffset = sel.focusOffset;
+                sel.collapse(sel.anchorNode, sel.anchorOffset);
+                  if (backwards)
+                  {
+                  sel.modify("move", "backward", "character");
+                  sel.modify("move", "forward", "word");
+                  sel.extend(endNode, endOffset);
+                  sel.modify("extend", "forward", "character");
+                  sel.modify("extend", "backward", "word");
 
-        } else {
-          sel.modify("move", "forward", "character");
-          sel.modify("move", "backward", "word");
-          sel.extend(endNode, endOffset);
-          sel.modify("extend", "backward", "character");
-          sel.modify("extend", "forward", "word");
+                  }
+                  else
+                  {
+                  sel.modify("move", "forward", "character");
+                  sel.modify("move", "backward", "word");
+                  sel.extend(endNode, endOffset);
+                  sel.modify("extend", "backward", "character");
+                  sel.modify("extend", "forward", "word");
+                  }
+            }
         }
-      }
-    } else if ((sel = document.selection) && sel.type != "Control") {
-      var textRange = sel.createRange();
-      if (textRange.text) {
-        textRange.expand("word");
-        // Move the end back to not include the word's trailing space(s),
-        // if necessary
-        while (/\s$/.test(textRange.text)) {
-          textRange.moveEnd("character", -1);
+        else if ((sel = document.selection) && sel.type != "Control")
+        {
+          var textRange = sel.createRange();
+            if (textRange.text)
+            {
+            textRange.expand("word");
+            // Move the end back to not include the word's trailing space(s),
+            // if necessary
+                while (/\s$/.test(textRange.text))
+                {
+              textRange.moveEnd("character", -1);
+                }
+            textRange.select();
+            }
         }
-        textRange.select();
-      }
     }
-  }
 
 
   //Opret gule mark-opmærkninger
