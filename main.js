@@ -469,6 +469,7 @@ $(function () {
         console.log("Objekt til at gemme markering i laves")
         x = {};
     }
+
     x.Selector = {};
     x.Selector.getSelected = function ()
     {
@@ -482,7 +483,7 @@ $(function () {
     }
 
     //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-    if ((x.Selector.getSelected().toString().trim() != ' ') && (x.Selector.getSelected().toString() != '.'))
+    if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString().trim() != ' ') && (x.Selector.getSelected().toString() != '.'))
     {
 
       //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
@@ -575,24 +576,41 @@ $(function () {
 
   //Fjerner mark-tag fra uddybning, så man kan lave en overlappende markering
   //(det er en hack. Jeg vil foretrække at man kan markere flere gange oveni hinanden)
-  function FjernMarkTag(DenNodeMarkSkalFjernesFra) {
-    console.log("Der tjekkes om noden i forvejen har mark-tag")
-    console.log(DenNodeMarkSkalFjernesFra.currentTarget.childElementCount)
-    if (DenNodeMarkSkalFjernesFra.currentTarget.childElementCount > 0) {
-      let marktag = document.getElementById(DenNodeMarkSkalFjernesFra.target.id)
-        .getElementsByTagName("mark");
-      while (marktag.length) {
-        let parent = marktag[0].parentNode;
-        while (marktag[0].firstChild) {
-          parent.insertBefore(marktag[0].firstChild, marktag[0]);
+    function FjernMarkTag(event)
+    {
+
+        console.log(event)
+
+        
+
+        if (event.currentTarget.childElementCount > 0)
+        {
+            if (event.target.matches('mark')) {
+
+                let teksten = event.target.innerText;
+                let thismark = event.target;             
+                thismark.remove();
+                event.currentTarget.innerText = teksten
+            }
+          
+            let marktag = document.getElementById(event.target.id).getElementsByTagName("mark");
+            while (marktag.length) {
+                let parent = marktag[0].parentNode;
+                while (marktag[0].firstChild) {
+                    parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                }
+                console.log("Der fjernes " + event.currentTarget.childElementCount + " markeringer i dette felt")
+
+                parent.removeChild(marktag[0]);
+
+            }
         }
-        parent.removeChild(marktag[0]);
-        console.log("der er fjernet mark-tag i p-tag");
-      }
-    } else {
-      console.log("Der er ingen mark-tag i denne node");
+        else
+        {
+          console.log("Der er ingen mark-tag i denne node");
+        }
+
     }
-  }
 
 
 
