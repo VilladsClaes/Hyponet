@@ -259,44 +259,7 @@ $(function () {
         return nodeResult;
   };
 
-  //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
-  function getSelectionCharacterOffsetWithin(element)
-  {
-    var start = 0;
-    var end = 0;
-    var doc = element.ownerDocument || element.document;
-    var win = doc.defaultView || doc.parentWindow;
-    var sel;
-
-    if (typeof win.getSelection != "undefined")
-    {
-        sel = win.getSelection();
-        if (sel.rangeCount > 0)
-        {
-            var range = win.getSelection().getRangeAt(0);
-            var preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.startContainer, range.startOffset);
-            start = preCaretRange.toString().length;
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            end = preCaretRange.toString().length;
-        }
-    }
-    else if ((sel = doc.selection) && sel.type != "Control")
-    {
-        var textRange = sel.createRange();
-        var preCaretTextRange = doc.body.createTextRange();
-        preCaretTextRange.moveToElementText(element);
-        preCaretTextRange.setEndPoint("EndToStart", textRange);
-        start = preCaretTextRange.text.length;
-        preCaretTextRange.setEndPoint("EndToEnd", textRange);
-        end = preCaretTextRange.text.length;
-    }
-    return { start: start, end: end };
-
-  }
-
-    
+      
   async function MarkNodeCreation(selectedText, domElement) {       
 
     var selOffsets = getSelectionCharacterOffsetWithin(domElement)
@@ -318,9 +281,6 @@ $(function () {
 
     CreateGreenBox(domElement, selectionObject);
   }
-
-
-
 
 
   //Send indhold til neo4j om at oprette en marknode
@@ -411,7 +371,7 @@ $(function () {
   }
 
 
-  //(GENBRUG) Hent ID fra neo4j til den samme tekstfelt-opmærkning som netop er oprettet
+  //Hent ID fra neo4j til den samme tekstfelt som netop er oprettet i UI
   function SetBoxId(resultObject)
   {
     //console.log(resultObject.element);
@@ -448,43 +408,73 @@ $(function () {
       })
   }
 
-  //(GENBRUG) Send indhold til neo4j om at oprrette en (SPEC)relation fra den forrige (mark)node til den indeværende (spec)node
-  function LavEnSpecRel(FraMarkNodensID, TilSpecNode) {
-
-  }
-
+  
   //Send grundnode afsted
   SendGrundNode()
 
 
+    //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
+    function getSelectionCharacterOffsetWithin(element) {
+        var start = 0;
+        var end = 0;
+        var doc = element.ownerDocument || element.document;
+        var win = doc.defaultView || doc.parentWindow;
+        var sel;
+
+        if (typeof win.getSelection != "undefined") {
+            sel = win.getSelection();
+            if (sel.rangeCount > 0) {
+                var range = win.getSelection().getRangeAt(0);
+                var preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.startContainer, range.startOffset);
+                start = preCaretRange.toString().length;
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                end = preCaretRange.toString().length;
+            }
+        }
+        else if ((sel = doc.selection) && sel.type != "Control") {
+            var textRange = sel.createRange();
+            var preCaretTextRange = doc.body.createTextRange();
+            preCaretTextRange.moveToElementText(element);
+            preCaretTextRange.setEndPoint("EndToStart", textRange);
+            start = preCaretTextRange.text.length;
+            preCaretTextRange.setEndPoint("EndToEnd", textRange);
+            end = preCaretTextRange.text.length;
+        }
+        return { start: start, end: end };
+
+    }
 
 
   //Marker tekst i tekstfeltet
   function SelectTextFromWindow(event)
   {
-    var selectedText = '';
+    var selectedText = window.getSelection();
     var domElement = event.target;
-    if (!window.x)
-    {
-        console.log("Objekt til at gemme markering i laves")
-        x = {};
-    }
+    //if (!window.x)
+    //{
+    //    //console.log("Objekt til at gemme markering i laves")
+    //    x = {};
+    //    console.log(x)
+    //}
 
-    x.Selector = {};
-    x.Selector.getSelected = function ()
-    {
+     
+    //x.Selector = {};
+    //x.Selector.getSelected = function ()
+    //{
 
-      if (window.getSelection)
-      {
-        selectedText = window.getSelection();
-      }
+    //  if (window.getSelection)
+    //  {
+    //    selectedText = window.getSelection();
+    //  }
 
-      return selectedText;
-    }
+    //  return selectedText;
+    //}
 
     //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-    if ((x.Selector.getSelected().toString().trim() != '') && (x.Selector.getSelected().toString().trim() != ' ') && (x.Selector.getSelected().toString() != '.'))
-    {
+      if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != ' ') && (selectedText.toString() != '.'))
+      {
 
       //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
       //!!!!!!!!!!!!!!!!!IMPLEMENTER FØRST NÅR SNAPSELECTION KUN KØRES HVIS DET ORD MAN MARKERER KUN HAR ÉT TEGN FORAN ELLER BAGVED INDEN WHITESPACE
@@ -492,11 +482,11 @@ $(function () {
 
       //Send indholdet, hvis man har glemt at trykke ENTER
         MarkNodeCreation(selectedText, domElement)
-    };
+      };
   }
 
     //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 2 characters tilbare af ordet
-    function snapSelectionToWord(selectedText)
+  function snapSelectionToWord(selectedText)
     {
         
         var sel;
@@ -564,7 +554,7 @@ $(function () {
     //marknodens ID - egenskab fra objekt
     //console.table([resultObject.node]);
 
-    var selection = x.Selector.getSelected();
+    var selection = window.getSelection();
     var selectionRange = selection.getRangeAt(0);
     var newMarkElement = document.createElement("mark");
     resultObject.element = newMarkElement;
