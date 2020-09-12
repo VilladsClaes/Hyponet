@@ -88,6 +88,7 @@ $(function () {
     SendSpecNode(resultObject);
   }
 
+  //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
   function DrawSpeechBubble(domElement, greenBox, resultObject)
   {
             //Lav en omgivende ramme
@@ -159,46 +160,55 @@ $(function () {
     }
   }
 
-  function SendGrundNode() {
-    var kunDenEneGang = true;
-    $("p.redbox").keypress(async function (e) {
-      //submit ved ENTER
-      if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
-        console.log("ENTER i redbox")
-        kunDenEneGang = false;
-        e.preventDefault();
-        await RootNodeCreation(e);
-      } else if (e.which == 13 && kunDenEneGang == false) {
-        kunDenEneGang = true;
-        e.preventDefault()
-        CreateRedBox(e)
-        console.log("ENTER trykket igen i redbox")
-      }
-    });
+    function SendGrundNode()
+    {
+      var kunDenEneGang = true;
+      $("p.redbox").keypress(async function (e)
+      {
+              //submit ved ENTER
+              if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "")
+              {
+                console.log("ENTER i redbox")
+                kunDenEneGang = false;
+                e.preventDefault();
+                await RootNodeCreation(e);
+              }
+              else if (e.which == 13 && kunDenEneGang == false)
+              {
+                kunDenEneGang = true;
+                e.preventDefault()
+                CreateRedBox(e)
+                console.log("ENTER trykket igen i redbox")
+              }
+      });
 
-    //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
-    $("p.redbox").mousedown(async function (e) {
-      //fjern placeholderteksten
-      if ($("p.redbox").text() === "Skriv noget her") {
-        $("p.redbox").text("")
-        console.log("Placeholder Fjernet ")
-      } else if ($("p.redbox").text() === "Skriv noget nyt...") {
-        $("p.redbox").text("")
-        console.log("Placeholder Fjernet igen")
-      }
+          //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
+          $("p.redbox").mousedown(async function (e)
+          {
+            //fjern placeholderteksten
+            if ($("p.redbox").text() === "Skriv noget her")
+            {
+                $("p.redbox").text("")
+                //console.log("Placeholder Fjernet ")
+            }
+            else if ($("p.redbox").text() === "Skriv noget nyt...")
+            {
+              $("p.redbox").text("")
+              //console.log("Placeholder Fjernet igen")
+            }
 
-      //Fjern eventuelle mark-elementer i dette p-element
-      FjernMarkTag(e);
+              //Fjern eventuelle mark-elementer i dette p-element
+              FjernMarkTag(e);
 
-      //Hvis man glemmer at trykke ENTER og laver mousedown igen, sendes teksten til neo4j = GRUNDNODE OPRETTES VED MUSEKLIK
-      if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
-        console.log(
-          "Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
-        await RootNodeCreation(e);
+              //Hvis man glemmer at trykke ENTER og laver mousedown igen, sendes teksten til neo4j = GRUNDNODE OPRETTES VED MUSEKLIK
+              if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "")
+              {
+                //console.log("Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
+                await RootNodeCreation(e);
 
-      }
-    });
-  };
+              }
+          });
+    };
 
   $('body').on("mouseup", "p.redbox", function (e) {
     //Vælg det markerede tekst ved mouseup
@@ -283,7 +293,7 @@ $(function () {
   }
 
 
-  //Send indhold til neo4j om at oprette en marknode
+    //Send indhold til neo4j om at oprette en marknode
     async function CreateMarkNode(selectedText, domElement) {
      
 
@@ -321,7 +331,7 @@ $(function () {
         return resultObject;
     }
 
-  //Send indhold til neo4j om at oprette en Spec-node
+    //Send indhold til neo4j om at oprette en Spec-node
     async function CreateSpecNode(greenBoxElement)
     {
         var nodeType = "SPEC";
@@ -447,45 +457,27 @@ $(function () {
     }
 
 
+
   //Marker tekst i tekstfeltet
   function SelectTextFromWindow(event)
   {
     var selectedText = window.getSelection();
     var domElement = event.target;
-    //if (!window.x)
-    //{
-    //    //console.log("Objekt til at gemme markering i laves")
-    //    x = {};
-    //    console.log(x)
-    //}
 
-     
-    //x.Selector = {};
-    //x.Selector.getSelected = function ()
-    //{
-
-    //  if (window.getSelection)
-    //  {
-    //    selectedText = window.getSelection();
-    //  }
-
-    //  return selectedText;
-    //}
 
     //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
       if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != ' ') && (selectedText.toString() != '.'))
       {
 
-      //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn
-      //!!!!!!!!!!!!!!!!!IMPLEMENTER FØRST NÅR SNAPSELECTION KUN KØRES HVIS DET ORD MAN MARKERER KUN HAR ÉT TEGN FORAN ELLER BAGVED INDEN WHITESPACE
-      // snapSelectionToWord(selectedText)
+      //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
+       snapSelectionToWord(selectedText)
 
       //Send indholdet, hvis man har glemt at trykke ENTER
         MarkNodeCreation(selectedText, domElement)
       };
   }
 
-    //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 2 characters tilbare af ordet
+    //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 1 characters tilbare af ordet
   function snapSelectionToWord(selectedText)
     {
         
@@ -534,14 +526,14 @@ $(function () {
           var textRange = sel.createRange();
             if (textRange.text)
             {
-            textRange.expand("word");
-            // Move the end back to not include the word's trailing space(s),
-            // if necessary
-                while (/\s$/.test(textRange.text))
-                {
-              textRange.moveEnd("character", -1);
-                }
-            textRange.select();
+                textRange.expand("word");
+                // Move the end back to not include the word's trailing space(s),
+                // if necessary
+                    while (/\s$/.test(textRange.text))
+                    {
+                      textRange.moveEnd("character", -1);
+                    }
+                textRange.select();
             }
         }
     }
@@ -569,35 +561,38 @@ $(function () {
     function FjernMarkTag(event)
     {
 
-        console.log(event)
-
-        
 
         if (event.currentTarget.childElementCount > 0)
         {
             if (event.target.matches('mark')) {
 
-                let teksten = event.target.innerText;
+                let teksten = event.currentTarget.textContent;
                 let thismark = event.target;             
                 thismark.remove();
                 event.currentTarget.innerText = teksten
             }
-          
-            let marktag = document.getElementById(event.target.id).getElementsByTagName("mark");
-            while (marktag.length) {
-                let parent = marktag[0].parentNode;
-                while (marktag[0].firstChild) {
-                    parent.insertBefore(marktag[0].firstChild, marktag[0]);
+            else
+            {
+                let marktag = document.getElementById(event.target.id).getElementsByTagName("mark");
+                while (marktag.length)
+                {
+                    let parent = marktag[0].parentNode;
+                    while (marktag[0].firstChild)
+                    {
+                        parent.insertBefore(marktag[0].firstChild, marktag[0]);
+                    }
+                    //console.log("Der fjernes " + event.currentTarget.childElementCount + " markeringer i dette felt")
+
+                    parent.removeChild(marktag[0]);
+
                 }
-                console.log("Der fjernes " + event.currentTarget.childElementCount + " markeringer i dette felt")
-
-                parent.removeChild(marktag[0]);
-
             }
+          
+           
         }
         else
         {
-          console.log("Der er ingen mark-tag i denne node");
+          //console.log("Der er ingen mark-tag i denne node");
         }
 
     }
@@ -605,42 +600,21 @@ $(function () {
 
 
 
-  $('body').on("mouseup", ".greenbox", function (e) {
-    //Vælg det markerede tekst ved mouseup
-    SelectTextFromWindow(e)
-    //slet eventuelle greenbox'e som ikke er blevet udfyldt
-
-    //!!!!!!!!!!OMKRANS MED BETINGELSE DER TJEKKER FOR OM DER OVERHOVEDET ER CHILDNODES
-    if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
-      e.currentTarget.nextElementSibling.remove();
-      console.log("tom greenbox fjernet");
-    }
-
-
-
-    console.log("der er mouseup i .greenbox");
-  })
+    $('body').on("mouseup", ".greenbox", function (e)
+    {
+        //Vælg det markerede tekst ved mouseup
+        SelectTextFromWindow(e)
+        //slet eventuelle greenbox'e som ikke er blevet udfyldt   
+        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "")
+        {
+          e.currentTarget.nextElementSibling.remove();
+          //console.log("tom greenbox fjernet");
+        }
+        console.log("der er mouseup i .greenbox");
+    })
 
 
-  //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
-
-
-  //
-
-
-
-
-  //Ændr et (spec)tekstfelt til et (grundnode)tekstfelt, hvis alt indholdet i et tekstfelt (være spec- eller grund-) slettes ved Delete eller backspace (ikke ved at markere det hele, for det opretter en mark-opmærkning)
-  //
-  //IKKE LAVET ENDNU
-  //
-  //(GENBRUG) Send indhold til neo4j om at oprette en grundnode
-  //
-  //IKKE LAVET ENDNU
-  //
-
-
-
+ 
 
 
 });
