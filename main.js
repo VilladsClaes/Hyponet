@@ -17,7 +17,7 @@ $(function () {
     HentAltTilDOM()
   })
   $('body').on('click', '#NyGrundNodeKnap', function (e) {
-    //Hvordan får jeg indsat en redbox forrest i samtale
+    
     console.log(e)
     CreateRedBox(e)
 
@@ -106,7 +106,7 @@ $(function () {
         //Hvis markering foregår i redbox
         if (domElement.parentElement == $("p.redbox"))
         {
-            console.log("Uddybningsboks udspringer fra grundnode");
+            //console.log("Uddybningsboks udspringer fra grundnode");
             document.getElementsByClassName("greenbox").append(svgFrame);
         }
         else
@@ -130,35 +130,40 @@ $(function () {
         var coordinatesBottomRight = parseInt((specification.width - 1.5) / 3) + "," + parseInt(21);
         bottomArrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesBottomRight);
         bottomArrow.setAttributeNS(null, "style", "stroke:#90ee90;stroke-width:1.5;stroke-linecap:round");
-        console.log("Taleboblens pil har følgende koordinater:");
-        console.log(arrow.getAttributeNS(null, "points"));
+        //console.log("Taleboblens pil har følgende koordinater:");
+        //console.log(arrow.getAttributeNS(null, "points"));
   }
 
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
-  function CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden) {
-    //Outputboks ÅBNES
-    var NytPTag = document.createElement("p");
-    $(NytPTag).attr("id", ASSNoden.ASSNodensID);
-    $(NytPTag).attr("class", "purpleparagraf");
-    $(NytPTag).attr("contenteditable", "true");
-    //Det er her magien skal ske. Mange algoritmer skal afgøre hvad der skal stå her i dette outputfelt
-    NytPTag.innerText = NoderMedSammeIndhold[0].MATCHENDENodensName;
-    console.log("nu bliver der lavet en associationsboks");
+    function CreateOutputBox(FraNoden, resultObject, innerText)
+    {
+        //Outputboks ÅBNES
+        var NytPTag = document.createElement("p");
+        SetBoxId(resultObject)
+        $(NytPTag).attr("class", "purpleparagraf");
+        $(NytPTag).attr("contenteditable", "true");
+        
+        NytPTag.innerText = innerText;
 
-    var ParentNode = document.getElementById(FraNoden.id);
+        //console.log("nu bliver der lavet en associationsboks");
 
-    if (ParentNode.parentElement == $("p.redbox")) {
-      console.log("output udspringer fra" + "c% grundnode", "color:red;");
+        
 
-      var nyOutputBoks = document.createElement("div");
-      $(nyOutputBoks).attr("class", "purpleboks");
-      nyOutputBoks.append(NytPTag);
-    } else {
-      $(NytPTag).insertAfter(ParentNode.parentElement.lastElementChild);
-      console.log("Output placeret efter")
-      console.log(ParentNode)
+        if (FraNoden.element.parentElement == $("p.redbox"))
+            {
+              //console.log("output udspringer fra" + "c% grundnode", "color:red;");
+
+              var nyOutputBoks = document.createElement("div");
+              $(nyOutputBoks).attr("class", "purpleboks");
+              nyOutputBoks.append(NytPTag);
+            }
+            else
+            {
+            $(NytPTag).insertAfter(FraNoden.element.parentElement.lastElementChild);
+              //console.log("Output placeret efter")
+              //console.log(FraNoden)
+            }
     }
-  }
 
     function SendGrundNode()
     {
@@ -168,7 +173,7 @@ $(function () {
               //submit ved ENTER
               if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "")
               {
-                console.log("ENTER i redbox")
+                //console.log("ENTER i redbox")
                 kunDenEneGang = false;
                 e.preventDefault();
                 await RootNodeCreation(e);
@@ -178,7 +183,7 @@ $(function () {
                 kunDenEneGang = true;
                 e.preventDefault()
                 CreateRedBox(e)
-                console.log("ENTER trykket igen i redbox")
+                //console.log("ENTER trykket igen i redbox")
               }
       });
 
@@ -211,7 +216,7 @@ $(function () {
     };
 
   $('body').on("mouseup", "p.redbox", function (e) {
-    //Vælg det markerede tekst ved mouseup
+    //Vælg det markerede tekst ved mouseup    
     SelectTextFromWindow(e);
     console.log("der er mouseup i .redbox")
 
@@ -275,7 +280,7 @@ $(function () {
     var selOffsets = getSelectionCharacterOffsetWithin(domElement)
     var start = selOffsets.start;
     var end = selOffsets.end;
-    console.log("Markering fra bogstav: " + start + " til bogstav " + end);
+    //console.log("Markering fra bogstav: " + start + " til bogstav " + end);
 
     //Resultobject indeholder: element og node
     var resultObject = await CreateMarkNode(selectedText, domElement);
@@ -346,16 +351,10 @@ $(function () {
         var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
         CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
 
-        // CreateRelation(resultObject.node, nodeToRelateTo);
-        /* 
-           for (let nodeIndex = 0; nodeIndex < NoderMedSammeIndhold.length; nodeIndex++) 
-           {
-               const nodeToRelateTo = NoderMedSammeIndhold[nodeIndex];
-               CreateRelation(resultObject.node, nodeToRelateTo)
-           };
-         */
+       
+        var OutputText = resultObject.node.name;
 
-        //CreateOutputBox(FraNoden, NoderMedSammeIndhold, ASSNoden)
+        CreateOutputBox(fromResultObject, resultObject, OutputText)
     }
 
   //Lav en Associationsnode
@@ -456,26 +455,83 @@ $(function () {
 
     }
 
+    //Find bogstav før markering
+    function getCharacterPrecedingCaret(containerEl) {
+        var precedingChar = "", sel, range, precedingRange;
+        if (window.getSelection) {
+            sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                range = sel.getRangeAt(0).cloneRange();
+                range.collapse(true);
+                range.setStart(containerEl, 0);
+                precedingChar = range.toString().slice(-1);
+            }
+        } else if ((sel = document.selection) && sel.type != "Control") {
+            range = sel.createRange();
+            precedingRange = range.duplicate();
+            precedingRange.moveToElementText(containerEl);
+            precedingRange.setEndPoint("EndToStart", range);
+            precedingChar = precedingRange.text.slice(-1);
+        }
+        return precedingChar;
+    }
 
 
-  //Marker tekst i tekstfeltet
-  function SelectTextFromWindow(event)
-  {
-    var selectedText = window.getSelection();
-    var domElement = event.target;
+    //Find bogstav efter markering
+    function getCharacterSucceedingSelection(containerEl) {
+        var succeedingChar = "", sel, range, succeedingRange;
+        if (window.getSelection) {
+            sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                range = sel.getRangeAt(0).cloneRange();
+                range.collapse(false);
+                range.setEnd(containerEl, containerEl.childNodes.length);
+                succeedingChar = range.toString().charAt(0);
+            }
+        } else if ((sel = document.selection) && sel.type != "Control") {
+            range = sel.createRange();
+            succeedingRange = range.duplicate();
+            succeedingRange.moveToElementText(containerEl);
+            succeedingRange.setEndPoint("EndToStart", range);
+            succeedingChar = succeedingRange.text.slice(-1);
+        }
+        return succeedingChar;
+    }
+
+   
 
 
-    //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-      if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != ' ') && (selectedText.toString() != '.'))
-      {
 
-      //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
-       snapSelectionToWord(selectedText)
+    //Marker tekst i tekstfeltet
+    function SelectTextFromWindow(event) {
+        var selectedText = "";
+        var domElement = event.target;
 
-      //Send indholdet, hvis man har glemt at trykke ENTER
-        MarkNodeCreation(selectedText, domElement)
-      };
-  }
+        if (window.getSelection)
+        { 
+            selectedText = window.getSelection();
+            //Gem teksten før og efter markeringen (skal bruges til at notere morfemgrænser i MARK-noden)
+            var precedingChar = getCharacterPrecedingCaret(domElement);
+            var succeedingChar = getCharacterSucceedingSelection(domElement)
+            console.log("Før denne markering: " + precedingChar);
+            console.log("Efter denne markering: " + succeedingChar);
+        }
+
+        //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
+        if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != '.'))
+        {
+
+            //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
+            //snapSelectionToWord(selectedText)
+
+            //Send indholdet, hvis man har glemt at trykke ENTER
+            MarkNodeCreation(selectedText, domElement)
+        };
+
+        return selectedText, domElement;
+    }
+
+
 
     //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 1 characters tilbare af ordet
   function snapSelectionToWord(selectedText)
@@ -551,7 +607,7 @@ $(function () {
     var newMarkElement = document.createElement("mark");
     resultObject.element = newMarkElement;
     selectionRange.surroundContents(newMarkElement);
-    console.log("markering på: " + selectionRange.toString());
+    //console.log("markering på: " + selectionRange.toString());
     return resultObject;
   }
 
@@ -605,12 +661,12 @@ $(function () {
         //Vælg det markerede tekst ved mouseup
         SelectTextFromWindow(e)
         //slet eventuelle greenbox'e som ikke er blevet udfyldt   
-        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "")
+        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerText == "")
         {
           e.currentTarget.nextElementSibling.remove();
           //console.log("tom greenbox fjernet");
         }
-        console.log("der er mouseup i .greenbox");
+        //console.log("der er mouseup i .greenbox");
     })
 
 
