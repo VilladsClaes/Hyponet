@@ -83,7 +83,7 @@ $(function () {
     $(greenBox).attr("contenteditable", "true");
     $(greenBox).addClass("greenbox");
     //console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
-        var parentElement = document.getElementById(domElement.id);
+    var parentElement = document.getElementById(domElement.id);
     DrawSpeechBubble(parentElement, greenBox, resultObject);
     SendSpecNode(resultObject);
   }
@@ -135,34 +135,33 @@ $(function () {
   }
 
   //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
-    function CreateOutputBox(FraNoden, resultObject, innerText)
+    function CreateOutputBox(greenboxAndAssNode)
     {
         //Outputboks ÅBNES
         var NytPTag = document.createElement("p");
-        SetBoxId(resultObject)
+        //Definér tekstfeltet i view
         $(NytPTag).attr("class", "purpleparagraf");
         $(NytPTag).attr("contenteditable", "true");
-        
-        NytPTag.innerText = innerText;
+        NytPTag.innerText = greenboxAndAssNode.node.name;
 
+        if (greenboxAndAssNode.element.parentElement == $("p.redbox")) {
+            //console.log("output udspringer fra" + "c% grundnode", "color:red;");
+            //placer div og læg tekstfeltet ind i div
+            var nyOutputBoks = document.createElement("div");
+            $(nyOutputBoks).attr("class", "purpleboks");
+            nyOutputBoks.append(NytPTag);
+        }
+        else {
+            $(NytPTag).insertAfter(greenboxAndAssNode.element.element.parentElement.lastElementChild);
+            //console.log("Output placeret efter")
+            //console.log(FraNoden)
+        }
+        greenboxAndAssNode.element = $(NytPTag);
+        SetBoxId(greenboxAndAssNode.node.id)
         //console.log("nu bliver der lavet en associationsboks");
 
         
 
-        if (FraNoden.element.parentElement == $("p.redbox"))
-            {
-              //console.log("output udspringer fra" + "c% grundnode", "color:red;");
-
-              var nyOutputBoks = document.createElement("div");
-              $(nyOutputBoks).attr("class", "purpleboks");
-              nyOutputBoks.append(NytPTag);
-            }
-            else
-            {
-            $(NytPTag).insertAfter(FraNoden.element.parentElement.lastElementChild);
-              //console.log("Output placeret efter")
-              //console.log(FraNoden)
-            }
     }
 
     function SendGrundNode()
@@ -338,6 +337,7 @@ $(function () {
 
     //Send indhold til neo4j om at oprette en Spec-node
     async function CreateSpecNode(greenBoxElement)
+
     {
         var nodeType = "SPEC";
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
@@ -348,30 +348,48 @@ $(function () {
 
     async function AssNodeCreation(fromResultObject, markResultObject)
     {
+        //opret en association i databasen baseret på markeringen
         var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
-        CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
+        //opret en relation i databaen baseret på hvilken SPEC den er lavet i og hvilken MARK den er lavet i
+        await CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
 
-       
-        var OutputText = resultObject.node.name;
+        //Vælg hvilken ASS-node fra databasen der skal dukke op
+        var SPECnodeASSnode = await ChooseAssNode(fromResultObject)
+        
 
-        CreateOutputBox(fromResultObject, resultObject, OutputText)
+        CreateOutputBox(SPECnodeASSnode)
     }
 
-  //Lav en Associationsnode
-  async function CreateAssNode(fromElement, selectedText)
-  {
-    var nodeType = "ASS";
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
-    console.log("der er lavet en ASS-node " + "%c" + nodeResult.node.id, "color:purple;")
-    return nodeResult;
-  };
+    //Lav en Associationsnode
+    async function CreateAssNode(fromElement, selectedText)
+    {
+        var nodeType = "ASS";
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
+        var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
+        console.log("der er lavet en ASS-node " + "%c" + nodeResult.node.id, "color:purple;")
+        return nodeResult;
+    };
+
+    //Find ASS-node med flest veje til sig
+    async function ChooseAssNode(domElement) {
+
+        
+        var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/";
+        //var nodeType = "ASS";
+        //var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + $.trim(markResultObject.element.innerText) + "/" + nodeType +  "/" + fromResultObject.element.id;
+
+        var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
+        
+        return nodeResult;
+    };
+    
 
   async function FindNodesToAssTo(fromNode)
   {
     var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
   }
 
+  //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
   async function CreateRelation(fromNodeId, toNodeId, relationType)
   {
       var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
@@ -400,10 +418,10 @@ $(function () {
               if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
               {
                 console.log("readystate = 4: " + xmlHttp.responseText);
-                 var jsonResult = await JSON.parse(xmlHttp.responseText);
-                 var resultObject = {node: jsonResult,element: element}
-                 resolve(resultObject);
-                 return resultObject;
+                var jsonResult = await JSON.parse(xmlHttp.responseText);
+                var resultObject = { node: jsonResult, element: element };
+                resolve(resultObject);
+                return resultObject;
               }
               else
               {
