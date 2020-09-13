@@ -144,20 +144,23 @@ $(function () {
         $(NytPTag).attr("contenteditable", "true");
         NytPTag.innerText = greenboxAndAssNode.node.name;
 
-        if (greenboxAndAssNode.element.parentElement == $("p.redbox")) {
+        if (greenboxAndAssNode.element.element.parentElement == $("p.redbox"))
+        {
             //console.log("output udspringer fra" + "c% grundnode", "color:red;");
             //placer div og læg tekstfeltet ind i div
             var nyOutputBoks = document.createElement("div");
             $(nyOutputBoks).attr("class", "purpleboks");
             nyOutputBoks.append(NytPTag);
         }
-        else {
+        else
+        {
             $(NytPTag).insertAfter(greenboxAndAssNode.element.element.parentElement.lastElementChild);
             //console.log("Output placeret efter")
             //console.log(FraNoden)
         }
-        greenboxAndAssNode.element = $(NytPTag);
-        SetBoxId(greenboxAndAssNode.node.id)
+
+        greenboxAndAssNode.element = NytPTag;
+        SetBoxId(greenboxAndAssNode)
         //console.log("nu bliver der lavet en associationsboks");
 
         
@@ -258,7 +261,7 @@ $(function () {
       });
   }
 
-  async function RootNodeCreation(e)
+    async function RootNodeCreation(e)
     {
       var rootNodeResult = await CreateRootNode(e);
       SetBoxId(rootNodeResult);
@@ -274,7 +277,7 @@ $(function () {
   };
 
       
-  async function MarkNodeCreation(selectedText, domElement) {       
+    async function MarkNodeCreation(selectedText, domElement) {       
 
     var selOffsets = getSelectionCharacterOffsetWithin(domElement)
     var start = selOffsets.start;
@@ -298,25 +301,25 @@ $(function () {
 
 
     //Send indhold til neo4j om at oprette en marknode
-    async function CreateMarkNode(selectedText, domElement) {
+    async function CreateMarkNode(selectedText, domElement)
+    {
      
 
         var nodeType = "MARK";
-
         var selOffsets = getSelectionCharacterOffsetWithin(domElement)
         var start = selOffsets.start;
         var end = selOffsets.end;
-      
 
-
+        var preChar = getCharacterSucceedingSelection(domElement)
+        var postChar = getCharacterPrecedingSelection(domElement)
    
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end;
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
+
+        //var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + precedingChar + "/" + succeedingChar + "/";
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
 
-     
-
-    return nodeResult;
-  }
+        return nodeResult;
+    }
 
     async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd)
     {
@@ -411,8 +414,8 @@ $(function () {
   {
       return new Promise(function (resolve, reject)
       {
-        var xmlHttp = new XMLHttpRequest();
-        var element = htmlElement;
+          var xmlHttp = new XMLHttpRequest();
+          var element = htmlElement;
           xmlHttp.onreadystatechange = async function ()
           {
               if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
@@ -473,8 +476,10 @@ $(function () {
 
     }
 
+  
+
     //Find bogstav før markering
-    function getCharacterPrecedingCaret(containerEl) {
+    function getCharacterPrecedingSelection(containerEl) {
         var precedingChar = "", sel, range, precedingRange;
         if (window.getSelection) {
             sel = window.getSelection();
@@ -529,7 +534,7 @@ $(function () {
         { 
             selectedText = window.getSelection();
             //Gem teksten før og efter markeringen (skal bruges til at notere morfemgrænser i MARK-noden)
-            var precedingChar = getCharacterPrecedingCaret(domElement);
+            var precedingChar = getCharacterPrecedingSelection(domElement);
             var succeedingChar = getCharacterSucceedingSelection(domElement)
             console.log("Før denne markering: " + precedingChar);
             console.log("Efter denne markering: " + succeedingChar);
@@ -543,7 +548,7 @@ $(function () {
             //snapSelectionToWord(selectedText)
 
             //Send indholdet, hvis man har glemt at trykke ENTER
-            MarkNodeCreation(selectedText, domElement)
+            MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
         };
 
         return selectedText, domElement;
