@@ -294,7 +294,22 @@ $(function () {
     await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
 
     await MergeMarkNodes(selectedText, domElement, start, end);
-    //await MergeMarkNodes(selectionObject.node.name, selectionObject.node.id, start, end);
+
+
+        //Lav en automatisk Ass-rel fra ASS til MARK
+        //kræver at MARK.name og MARK.morfem[preceedingChar, suceedingChar] kendes
+        var name = resultObject.node.name;
+
+        var postChar = getCharacterSucceedingSelection(domElement)
+        var preChar = getCharacterPrecedingSelection(domElement)
+        //encode null as string to avoid 404 in httpGet
+        if (postChar == "") {
+            var postChar = " ";
+        }
+        else if (preChar == "") {
+            var preChar = " ";
+        }
+        await CreateAssRelationToMark(name, preChar, postChar);
 
     CreateGreenBox(domElement, selectionObject);
   }
@@ -310,8 +325,18 @@ $(function () {
         var start = selOffsets.start;
         var end = selOffsets.end;
 
-        var preChar = getCharacterSucceedingSelection(domElement)
-        var postChar = getCharacterPrecedingSelection(domElement)
+        var postChar = getCharacterSucceedingSelection(domElement)
+        var preChar = getCharacterPrecedingSelection(domElement)
+
+        //encode null as string to avoid 404 in httpGet
+        if (postChar == ""  )
+        {
+            var postChar = " ";            
+        }
+        else if (preChar == "")
+        {
+            var preChar = " ";
+        }
    
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
 
@@ -327,6 +352,14 @@ $(function () {
       var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
       var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
       return nodeResult;
+    }
+
+    async function CreateAssRelationToMark(name, preceedingChar, suceedingChar)
+    {
+        
+        var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + $.trim(name) + "/" + preceedingChar + "/" + suceedingChar + "/";
+        var nodeResult = await httpGetAsync(apiEndpointUrl);
+        return nodeResult;
     }
 
 
