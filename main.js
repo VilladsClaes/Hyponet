@@ -279,21 +279,22 @@ $(function () {
       
     async function MarkNodeCreation(selectedText, domElement) {       
 
-    var selOffsets = getSelectionCharacterOffsetWithin(domElement)
-    var start = selOffsets.start;
-    var end = selOffsets.end;
-    //console.log("Markering fra bogstav: " + start + " til bogstav " + end);
+        var selOffsets = getSelectionCharacterOffsetWithin(domElement)
+        var start = selOffsets.start;
+        var end = selOffsets.end;
+        //console.log("Markering fra bogstav: " + start + " til bogstav " + end);
 
-    //Resultobject indeholder: element og node
-    var resultObject = await CreateMarkNode(selectedText, domElement);
-    var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
+        //Resultobject indeholder: element og node
+        var resultObject = await CreateMarkNode(selectedText, domElement);
+        var selectionObject = SurroundSelectedTextWithMarkTag(resultObject);
 
-    SetBoxId(selectionObject);
-    //domelement er boksen den er lavet i, ROOT eller SPEC. 
-    //selectionobject er markeringen
-    await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
+        SetBoxId(selectionObject);
+        //domelement er boksen den er lavet i, ROOT eller SPEC. 
+        //selectionobject er markeringen
+        await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
 
-    await MergeMarkNodes(selectedText, domElement, start, end);
+        
+        await MergeMarkNodes(selectedText, domElement, start, end);
 
 
         //Lav en automatisk Ass-rel fra ASS til MARK
@@ -349,7 +350,8 @@ $(function () {
 
     async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd)
     {
-      var nodeType = "MARK";
+        var nodeType = "MARK";
+        console.log("Marknoden" + domElement.id + "merges" )
       var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
       var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
       return nodeResult;
@@ -577,7 +579,7 @@ $(function () {
             if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != '.')) {
 
                 //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
-                //snapSelectionToWord(selectedText)
+                snapSelectionToWord(selectedText)
 
                 //Send indholdet, hvis man har glemt at trykke ENTER
                 MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
@@ -615,7 +617,8 @@ $(function () {
 
                 // modify() works on the focus of the selection
                 var endNode = sel.focusNode,
-                  endOffset = sel.focusOffset;
+                    endOffset = sel.focusOffset;
+                //udvid kun til sel.focusNode.nodeValue = Mark.name
                 sel.collapse(sel.anchorNode, sel.anchorOffset);
                   if (backwards)
                   {
@@ -628,11 +631,18 @@ $(function () {
                   }
                   else
                   {
-                  sel.modify("move", "forward", "character");
-                  sel.modify("move", "backward", "word");
-                  sel.extend(endNode, endOffset);
-                  sel.modify("extend", "backward", "character");
-                  sel.modify("extend", "forward", "word");
+                      sel.modify("move", "forward", "character");
+                      sel.modify("move", "backward", "word");
+                      sel.extend(endNode, endOffset);
+                      sel.modify("extend", "backward", "character");
+                      sel.modify("extend", "forward", "word");
+
+                      //kun hvis det ikke er slutningen af teksten
+                      if (sel.baseNode.nextSibling != null) {
+                          //Fjern whitespace fra word
+                          sel.modify("extend", "backward", "character");
+                      }
+                     
                   }
             }
         }
@@ -724,10 +734,13 @@ $(function () {
       
        
         //slet eventuelle greenbox'e som ikke er blevet udfyldt   
-        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerText == "")
+        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[0].parentElement.className != "purpleparagraf")
         {
-          e.currentTarget.nextElementSibling.remove();
-          //console.log("tom greenbox fjernet");
+            if (e.currentTarget.nextElementSibling.childNodes[1].innerText == "") {
+                e.currentTarget.nextElementSibling.remove();
+                //console.log("tom greenbox fjernet");
+            }
+        
         }
         //console.log("der er mouseup i .greenbox");
     })
