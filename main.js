@@ -302,11 +302,12 @@ $(function () {
 
         var postChar = getCharacterSucceedingSelection(domElement)
         var preChar = getCharacterPrecedingSelection(domElement)
+
         //encode null as string to avoid 404 in httpGet
-        if (postChar == "") {
+        if (postChar == ""  ) {
             var postChar = " ";
         }
-        else if (preChar == "") {
+        if (preChar == "" ) {
             var preChar = " ";
         }
         await CreateAssRelationToMark(name, preChar, postChar);
@@ -333,7 +334,7 @@ $(function () {
         {
             var postChar = " ";            
         }
-        else if (preChar == "")
+        if (preChar == "")
         {
             var preChar = " ";
         }
@@ -711,11 +712,15 @@ $(function () {
 
 
 
-
+    //Vælg det markerede tekst ved mouseup
     $('body').on("mouseup", ".greenbox", function (e)
     {
-        //Vælg det markerede tekst ved mouseup
-        SelectTextFromWindow(e)
+
+        //Vælg kun hvis der overhovedet ER en markering
+      
+            SelectTextFromWindow(e)
+      
+       
         //slet eventuelle greenbox'e som ikke er blevet udfyldt   
         if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerText == "")
         {
