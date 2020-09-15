@@ -561,29 +561,31 @@ $(function () {
 
     //Marker tekst i tekstfeltet
     function SelectTextFromWindow(event) {
-        var selectedText = "";
+        var selectedText = window.getSelection();
         var domElement = event.target;
 
-        if (window.getSelection)
+        if (selectedText.type != "Caret")
         { 
-            selectedText = window.getSelection();
+            
             //Gem teksten før og efter markeringen (skal bruges til at notere morfemgrænser i MARK-noden)
             var precedingChar = getCharacterPrecedingSelection(domElement);
             var succeedingChar = getCharacterSucceedingSelection(domElement)
             console.log("Før denne markering: " + precedingChar);
             console.log("Efter denne markering: " + succeedingChar);
+
+            //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
+            if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != '.')) {
+
+                //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
+                //snapSelectionToWord(selectedText)
+
+                //Send indholdet, hvis man har glemt at trykke ENTER
+                MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
+            };
+
         }
 
-        //udfør kun hvis der ER markeret noget OG der ikke blot er markeret mellemrum eller et punktum
-        if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != '.'))
-        {
-
-            //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
-            //snapSelectionToWord(selectedText)
-
-            //Send indholdet, hvis man har glemt at trykke ENTER
-            MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
-        };
+      
 
         return selectedText, domElement;
     }
