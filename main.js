@@ -172,18 +172,7 @@ $(function () {
 
         $("p.redbox").keypress(async function (e) {
 
-            //console.log(e.key)
-            if (e.currentTarget.innerText != "")
-            {
-                var searchresults = await SearchNodes(e.currentTarget.innerText);
-                console.log(searchresults)
-            }
-            else
-            {
-                var searchresults = await SearchNodes(e.key);
-                console.log(searchresults)
-            }
-            
+         
 
             //submit ved ENTER
             if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
@@ -198,6 +187,17 @@ $(function () {
                 CreateRedBox(e)
                 //console.log("ENTER trykket igen i redbox")
             }
+
+            //console.log(e.key)
+            if (e.currentTarget.innerText != "") {
+                var searchresults = await SearchNodes(e.currentTarget.innerText);
+                console.log(searchresults)
+            }
+            else {
+                var searchresults = await SearchNodes(e.key);
+                console.log(searchresults)
+            }
+
         });
 
         //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
@@ -272,7 +272,9 @@ $(function () {
     //Søg efter andre noder
     async function SearchNodes(searchChars) {
 
-        var apiEndpointUrl = "https://localhost:44380/Node/SearchNodes/" + searchChars;
+        var encodedString = encodeURIComponent(searchChars);
+       
+        var apiEndpointUrl = "https://localhost:44380/Node/SearchNodes/" + encodedString;
         var SearchResult = await httpGetAsync(apiEndpointUrl);
         return SearchResult;
     };
@@ -282,7 +284,8 @@ $(function () {
     //Send indhold til neo4j om at oprette en grundnode
     async function CreateRootNode(e) {
         var nodeType = "ROOT";
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
+        var encodedString = encodeURIComponent(e.target.innerText);
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
         var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
         return nodeResult;
     };
@@ -347,10 +350,10 @@ $(function () {
         if (preChar == "") {
             var preChar = " ";
         }
+        var encodedString = encodeURIComponent($.trim(selectedText));
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
 
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
-
-        //var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + precedingChar + "/" + succeedingChar + "/";
+       
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
 
         return nodeResult;
@@ -359,15 +362,16 @@ $(function () {
     async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
         var nodeType = "MARK";
         log(nodeType + "-noden  " + domElement.id + " er merget", "MARK"); 
-        
-        var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
+
+        var encodedString = encodeURIComponent($.trim(selectedText));
+        var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + encodedString + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
         return nodeResult;
     }
 
     async function CreateAssRelationToMark(name, preceedingChar, suceedingChar) {
-
-        var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + $.trim(name) + "/" + preceedingChar + "/" + suceedingChar + "/";
+        var encodedString = encodeURIComponent($.trim(name));
+        var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + encodedString + "/" + preceedingChar + "/" + suceedingChar + "/";
         var nodeResult = await httpGetAsync(apiEndpointUrl);
         return nodeResult;
     }
@@ -383,7 +387,8 @@ $(function () {
     //Send indhold til neo4j om at oprette en Spec-node
     async function CreateSpecNode(greenBoxElement) {
         var nodeType = "SPEC";
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
+        var encodedString = encodeURIComponent($.trim(greenBoxElement.innerText));
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
         var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
         return nodeResult;
     }
@@ -405,7 +410,9 @@ $(function () {
     //Lav en Associationsnode
     async function CreateAssNode(fromElement, selectedText) {
         var nodeType = "ASS";
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
+        var encodedString = encodeURIComponent($.trim(selectedText));
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
+        
         var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
         console.log("der er lavet en ASS-node " + "%c" + nodeResult.node.id, "color:purple;")
         return nodeResult;
@@ -447,6 +454,9 @@ $(function () {
 
     //Åbner ajax-api-xmlhttprequest-xhr
     function httpGetAsync(theUrl, htmlElement) {
+
+       
+
         return new Promise(function (resolve, reject) {
             var xmlHttp = new XMLHttpRequest();
             var element = htmlElement;
