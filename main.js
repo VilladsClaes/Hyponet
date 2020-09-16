@@ -3,95 +3,98 @@ $(function () {
 
 
 
-  $('body').on('click', '#gemknap', function () {
+    $('body').on('click', '#gemknap', function () {
 
-    GemTilLocalstorage();
-  })
+        GemTilLocalstorage();
+    })
 
-  $('body').on('click', '#fjernknap', function () {
+    $('body').on('click', '#fjernknap', function () {
 
-    FjernAltIDOM()
-  })
-  $('body').on('click', '#fyldknap', function () {
+        FjernAltIDOM()
+    })
+    $('body').on('click', '#fyldknap', function () {
 
-    HentAltTilDOM()
-  })
-  $('body').on('click', '#NyGrundNodeKnap', function (e) {
+        HentAltTilDOM()
+    })
+    $('body').on('click', '#NyGrundNodeKnap', function (e) {
+
+        console.log(e)
+        CreateRedBox(e)
+
+    })
+
+
+    function GemTilLocalstorage() {
+        //Hent tidligere indtastninger fra denne browers localstorage
+        if (localStorage.getItem("indtastninger") != null) {
+            var indtastninger = localStorage.getItem("indtastninger");
+        }
+        //Hent JSON
+        var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
+        //Skriv til localstorage
+        var helehjemmesiden = document.getElementById("samtale").innerHTML;
+        localStorage.setItem("indtastninger", helehjemmesiden);
+        //Skriv JSON
+        localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
+    }
+
+    function FjernAltIDOM() {
+        //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
+        document.getElementById("samtale").innerHTML =
+            "<p class='redbox' contenteditable='true'>Skriv noget nyt..</p";
+    }
+
+    // Retrieve Content
+    function HentAltTilDOM() {
+        document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem(
+            "indtastninger"));
+    }
+
     
-    console.log(e)
-    CreateRedBox(e)
+    
+    //Opret et tekstfelt til grundnoder
+    function CreateRedBox(e) {
 
-  })
+        let redBox = document.createElement("p");
+        $(redBox).attr("contenteditable", "true");
+        $(redBox).addClass("redbox")
 
-
-  function GemTilLocalstorage() {
-    //Hent tidligere indtastninger fra denne browers localstorage
-    if (localStorage.getItem("indtastninger") != null) {
-      var indtastninger = localStorage.getItem("indtastninger");
+        //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
+        if (document.getElementsByClassName("redbox")[0] = undefined) {
+            //console.log("der er ingen redboxes i vindues")
+            let newConversation = document.createElement("div");
+            newConversation.attr("id", "conversation");
+            newConversation.attr("class", "container-fluid");
+            document.getElementById("NyGrundNodeKnap").append(newConversation)
+        }
+        else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
+            $(redBox).insertBefore(e.currentTarget);
+            SendGrundNode()
+        }
+        else if (e.currentTarget.id == "NyGrundNodeKnap") {
+            $("#conversation").prepend(redBox);
+            SendGrundNode()
+        }
     }
-    //Hent JSON
-    var indtastninger = JSON.parse(localStorage.getItem("indtastninger"));
-    //Skriv til localstorage
-    var helehjemmesiden = document.getElementById("samtale").innerHTML;
-    localStorage.setItem("indtastninger", helehjemmesiden);
-    //Skriv JSON
-    localStorage.setItem("indtastninger", JSON.stringify(helehjemmesiden));
-  }
 
-  function FjernAltIDOM() {
-    //Fjerner indholdet af samtale-div'en og laver et nyt p.redbox
-    document.getElementById("samtale").innerHTML =
-      "<p class='redbox' contenteditable='true'>Skriv noget nyt..</p";
-  }
+    
 
-  // Retrieve Content
-  function HentAltTilDOM() {
-    document.getElementById("samtale").innerHTML = JSON.parse(localStorage.getItem(
-      "indtastninger"));
-  }
 
-  //Opret et tekstfelt til grundnoder
-  function CreateRedBox(e) {
 
-    let redBox = document.createElement("p");
-    $(redBox).attr("contenteditable", "true");
-    $(redBox).addClass("redbox")
 
-    //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
-    if (document.getElementsByClassName("redbox")[0] = undefined) {
-      //console.log("der er ingen redboxes i vindues")
-      let newConversation = document.createElement("div");
-      newConversation.attr("id", "conversation");
-      newConversation.attr("class", "container-fluid");
-      document.getElementById("NyGrundNodeKnap").append(newConversation)
+    function CreateGreenBox(domElement, resultObject) {
+        var greenBox = document.createElement("p");
+        $(greenBox).attr("contenteditable", "true");
+        $(greenBox).addClass("greenbox");
+        //console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
+        var parentElement = document.getElementById(domElement.id);
+        DrawSpeechBubble(parentElement, greenBox, resultObject);
+        SendSpecNode(resultObject);
     }
-    else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap")
-    {
-      $(redBox).insertBefore(e.currentTarget);
-      SendGrundNode()
-    }
-    else if (e.currentTarget.id == "NyGrundNodeKnap")
-    {
-      $("#conversation").prepend(redBox);
-      SendGrundNode()
-    }
-  }
 
-  function CreateGreenBox(domElement, resultObject)
-  {
-    var greenBox = document.createElement("p");
-    $(greenBox).attr("contenteditable", "true");
-    $(greenBox).addClass("greenbox");
-    //console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
-    var parentElement = document.getElementById(domElement.id);
-    DrawSpeechBubble(parentElement, greenBox, resultObject);
-    SendSpecNode(resultObject);
-  }
-
-  //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
-  function DrawSpeechBubble(domElement, greenBox, resultObject)
-  {
-            //Lav en omgivende ramme
+    //Opret en taleboblehale der går fra uddybningstekstfeltet til den mark-opmærkningen som udløste (uddybnings)tekstfeltet
+    function DrawSpeechBubble(domElement, greenBox, resultObject) {
+        //Lav en omgivende ramme
         var svgFrame = document.createElement('div');
         //Definér det der skal indsættes
         var svgHtml = "<svg><polyline id='pilTilMark" + resultObject.node.id +
@@ -104,13 +107,11 @@ $(function () {
         svgFrame.appendChild(greenBox);
 
         //Hvis markering foregår i redbox
-        if (domElement.parentElement == $("p.redbox"))
-        {
+        if (domElement.parentElement == $("p.redbox")) {
             //console.log("Uddybningsboks udspringer fra grundnode");
             document.getElementsByClassName("greenbox").append(svgFrame);
         }
-        else
-        {
+        else {
             $(svgFrame).insertAfter(domElement);
         }
 
@@ -126,17 +127,16 @@ $(function () {
         //var coordsBottom = 
         //var lengthSideBottom = Math.sqrt((Math.pow(parseInt(specification.width / 4), 2) - Math.pow(parseInt(specification.width / 3)), 2)) + (Math.pow(parseInt(21), 2) - Math.pow(parseInt(21), 2));
         //Placering af taleboblepilens to ben og spids
-        arrow.setAttributeNS(null, "points", coordinatesArrowLeft+" "+coordinatesOfArrowTip+" "+coordinatesArrowRight+" "+coordinatesArrowLeft);
+        arrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesOfArrowTip + " " + coordinatesArrowRight + " " + coordinatesArrowLeft);
         var coordinatesBottomRight = parseInt((specification.width - 1.5) / 3) + "," + parseInt(21);
         bottomArrow.setAttributeNS(null, "points", coordinatesArrowLeft + " " + coordinatesBottomRight);
         bottomArrow.setAttributeNS(null, "style", "stroke:#90ee90;stroke-width:1.5;stroke-linecap:round");
         //console.log("Taleboblens pil har følgende koordinater:");
         //console.log(arrow.getAttributeNS(null, "points"));
-  }
+    }
 
-  //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
-    function CreateOutputBox(greenboxAndAssNode)
-    {
+    //Opret et tekstfelt til til output af associationer (som er en ASSNODE)
+    function CreateOutputBox(greenboxAndAssNode) {
         //Outputboks ÅBNES
         var NytPTag = document.createElement("p");
         //Definér tekstfeltet i view
@@ -144,16 +144,14 @@ $(function () {
         $(NytPTag).attr("contenteditable", "true");
         NytPTag.innerText = greenboxAndAssNode.node.name;
 
-        if (greenboxAndAssNode.element.element.parentElement == $("p.redbox"))
-        {
+        if (greenboxAndAssNode.element.element.parentElement == $("p.redbox")) {
             //console.log("output udspringer fra" + "c% grundnode", "color:red;");
             //placer div og læg tekstfeltet ind i div
             var nyOutputBoks = document.createElement("div");
             $(nyOutputBoks).attr("class", "purpleboks");
             nyOutputBoks.append(NytPTag);
         }
-        else
-        {
+        else {
             $(NytPTag).insertAfter(greenboxAndAssNode.element.element.parentElement.lastElementChild);
             //console.log("Output placeret efter")
             //console.log(FraNoden)
@@ -163,121 +161,134 @@ $(function () {
         SetBoxId(greenboxAndAssNode)
         //console.log("nu bliver der lavet en associationsboks");
 
-        
+
 
     }
 
-    function SendGrundNode()
-    {
-      var kunDenEneGang = true;
-      $("p.redbox").keypress(async function (e)
-      {
-              //submit ved ENTER
-              if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "")
-              {
+    function SendGrundNode() {
+        var kunDenEneGang = true;
+
+
+
+        $("p.redbox").keypress(async function (e) {
+
+            //console.log(e.key)
+            if (e.currentTarget.innerText != "")
+            {
+                var searchresults = await SearchNodes(e.currentTarget.innerText);
+                console.log(searchresults)
+            }
+            else
+            {
+                var searchresults = await SearchNodes(e.key);
+                console.log(searchresults)
+            }
+            
+
+            //submit ved ENTER
+            if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                 //console.log("ENTER i redbox")
                 kunDenEneGang = false;
                 e.preventDefault();
                 await RootNodeCreation(e);
-              }
-              else if (e.which == 13 && kunDenEneGang == false)
-              {
+            }
+            else if (e.which == 13 && kunDenEneGang == false) {
                 kunDenEneGang = true;
                 e.preventDefault()
                 CreateRedBox(e)
                 //console.log("ENTER trykket igen i redbox")
-              }
-      });
+            }
+        });
 
-          //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
-          $("p.redbox").mousedown(async function (e)
-          {
+        //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
+        $("p.redbox").mousedown(async function (e) {
             //fjern placeholderteksten
-            if ($("p.redbox").text() === "Skriv noget her")
-            {
+            if ($("p.redbox").text() === "Skriv noget her") {
                 $("p.redbox").text("")
                 //console.log("Placeholder Fjernet ")
             }
-            else if ($("p.redbox").text() === "Skriv noget nyt...")
-            {
-              $("p.redbox").text("")
-              //console.log("Placeholder Fjernet igen")
+            else if ($("p.redbox").text() === "Skriv noget nyt...") {
+                $("p.redbox").text("")
+                //console.log("Placeholder Fjernet igen")
             }
 
-              //Fjern eventuelle mark-elementer i dette p-element
-              FjernMarkTag(e);
+            //Fjern eventuelle mark-elementer i dette p-element
+            FjernMarkTag(e);
 
-              //Hvis man glemmer at trykke ENTER og laver mousedown igen, sendes teksten til neo4j = GRUNDNODE OPRETTES VED MUSEKLIK
-              if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "")
-              {
+            //Hvis man glemmer at trykke ENTER og laver mousedown igen, sendes teksten til neo4j = GRUNDNODE OPRETTES VED MUSEKLIK
+            if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
                 //console.log("Da der ikke blev trykket ENTER i .redbox, sendes indholdet til databasen")
                 await RootNodeCreation(e);
 
-              }
-          });
+            }
+        });
     };
 
-  $('body').on("mouseup", "p.redbox", function (e) {
-    //Vælg det markerede tekst ved mouseup    
-    SelectTextFromWindow(e);
-    console.log("der er mouseup i .redbox")
+    $('body').on("mouseup", "p.redbox", function (e) {
+        //Vælg det markerede tekst ved mouseup    
+        SelectTextFromWindow(e);
+        console.log("der er mouseup i .redbox")
 
-    if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
-      e.currentTarget.nextElementSibling.remove()
-      console.log("tom greenbox fjernet")
+        if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
+            e.currentTarget.nextElementSibling.remove()
+            console.log("tom greenbox fjernet")
+        }
+
+    })
+
+    // markNodeOrigin er den marknode som specnoden kommer fra
+    function SendSpecNode(MARKOrigin) {
+
+        //Hvis man bruger ENTER eller museklik i et grønt felt som IKKE er tomt, så skal den sende til databasen
+        var kunDenEneGang = true;
+        $(".greenbox").keypress(async function (e) {
+            if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
+                //console.log("ENTER i .greenbox")
+                e.preventDefault();
+                var resultObject = await SpecNodeCreation(e, MARKOrigin);
+                AssNodeCreation(resultObject, MARKOrigin);
+                e.currentTarget.removeAttribute("contenteditable")
+                kunDenEneGang = false;
+            }
+        });
+
+        $("body").on("mousedown", ".greenbox", async function (e) {
+            FjernMarkTag(e);
+            if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "") {
+                //console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
+                var resultObject = await SpecNodeCreation(e, MARKOrigin)
+                AssNodeCreation(resultObject, MARKOrigin);
+                e.currentTarget.removeAttribute("contenteditable");
+                kunDenEneGang = false;
+            }
+        });
     }
 
-  })
-
-      // markNodeOrigin er den marknode som specnoden kommer fra
-  function SendSpecNode(MARKOrigin) {
-
-    //Hvis man bruger ENTER eller museklik i et grønt felt som IKKE er tomt, så skal den sende til databasen
-    var kunDenEneGang = true;
-      $(".greenbox").keypress(async function (e)
-      {
-          if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "")
-          {
-            //console.log("ENTER i .greenbox")
-            e.preventDefault();
-            var resultObject = await SpecNodeCreation(e, MARKOrigin);
-            AssNodeCreation(resultObject, MARKOrigin);
-            e.currentTarget.removeAttribute("contenteditable")
-            kunDenEneGang = false;
-           }
-      });
-
-      $("body").on("mousedown", ".greenbox", async function (e)
-      {
-         FjernMarkTag(e);
-          if (e.currentTarget.innerText != "" && kunDenEneGang && e.currentTarget.id == "")
-          {
-            //console.log("Da der ikke blev trykket ENTER i .greenbox, sendes indholdet til databasen")
-            var resultObject = await SpecNodeCreation(e, MARKOrigin)
-            AssNodeCreation(resultObject, MARKOrigin);
-            e.currentTarget.removeAttribute("contenteditable");
-            kunDenEneGang = false;
-          }
-      });
-  }
-
-    async function RootNodeCreation(e)
-    {
-      var rootNodeResult = await CreateRootNode(e);
-      SetBoxId(rootNodeResult);
+    async function RootNodeCreation(e) {
+        var rootNodeResult = await CreateRootNode(e);
+        SetBoxId(rootNodeResult);
     }
 
-  //Send indhold til neo4j om at oprette en grundnode
-  async function CreateRootNode(e)
-  {
+    //Søg efter andre noder
+    async function SearchNodes(searchChars) {
+
+        var apiEndpointUrl = "https://localhost:44380/Node/SearchNodes/" + searchChars;
+        var SearchResult = await httpGetAsync(apiEndpointUrl);
+        return SearchResult;
+    };
+
+
+
+    //Send indhold til neo4j om at oprette en grundnode
+    async function CreateRootNode(e) {
         var nodeType = "ROOT";
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + e.target.innerText + "/" + nodeType;
         var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
         return nodeResult;
-  };
+    };
 
-      
-    async function MarkNodeCreation(selectedText, domElement) {       
+
+    async function MarkNodeCreation(selectedText, domElement) {
 
         var selOffsets = getSelectionCharacterOffsetWithin(domElement)
         var start = selOffsets.start;
@@ -293,7 +304,7 @@ $(function () {
         //selectionobject er markeringen
         await CreateRelation(domElement.id, selectionObject.node.id, "Mark");
 
-        
+
         await MergeMarkNodes(selectedText, domElement, start, end);
 
 
@@ -305,22 +316,21 @@ $(function () {
         var preChar = getCharacterPrecedingSelection(domElement)
 
         //encode null as string to avoid 404 in httpGet
-        if (postChar == ""  ) {
+        if (postChar == "") {
             var postChar = " ";
         }
-        if (preChar == "" ) {
+        if (preChar == "") {
             var preChar = " ";
         }
         await CreateAssRelationToMark(name, preChar, postChar);
 
-    CreateGreenBox(domElement, selectionObject);
-  }
+        CreateGreenBox(domElement, selectionObject);
+    }
 
 
     //Send indhold til neo4j om at oprette en marknode
-    async function CreateMarkNode(selectedText, domElement)
-    {
-     
+    async function CreateMarkNode(selectedText, domElement) {
+
 
         var nodeType = "MARK";
         var selOffsets = getSelectionCharacterOffsetWithin(domElement)
@@ -331,15 +341,13 @@ $(function () {
         var preChar = getCharacterPrecedingSelection(domElement)
 
         //encode null as string to avoid 404 in httpGet
-        if (postChar == ""  )
-        {
-            var postChar = " ";            
+        if (postChar == "") {
+            var postChar = " ";
         }
-        if (preChar == "")
-        {
+        if (preChar == "") {
             var preChar = " ";
         }
-   
+
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
 
         //var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType + "/" + start + "/" + end + "/" + precedingChar + "/" + succeedingChar + "/";
@@ -348,26 +356,24 @@ $(function () {
         return nodeResult;
     }
 
-    async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd)
-    {
+    async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
         var nodeType = "MARK";
-        console.log("Marknoden" + domElement.id + "merges" )
-      var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
-      var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
-      return nodeResult;
+        log(nodeType + "-noden  " + domElement.id + " er merget", "MARK"); 
+        
+        var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + $.trim(selectedText) + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
+        var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+        return nodeResult;
     }
 
-    async function CreateAssRelationToMark(name, preceedingChar, suceedingChar)
-    {
-        
+    async function CreateAssRelationToMark(name, preceedingChar, suceedingChar) {
+
         var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + $.trim(name) + "/" + preceedingChar + "/" + suceedingChar + "/";
         var nodeResult = await httpGetAsync(apiEndpointUrl);
         return nodeResult;
     }
 
 
-    async function SpecNodeCreation(e, markNodeOrigin)
-    {
+    async function SpecNodeCreation(e, markNodeOrigin) {
         var resultObject = await CreateSpecNode(e.currentTarget);
         SetBoxId(resultObject);
         await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
@@ -375,9 +381,7 @@ $(function () {
     }
 
     //Send indhold til neo4j om at oprette en Spec-node
-    async function CreateSpecNode(greenBoxElement)
-
-    {
+    async function CreateSpecNode(greenBoxElement) {
         var nodeType = "SPEC";
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(greenBoxElement.innerText) + "/" + nodeType;
         var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
@@ -385,8 +389,7 @@ $(function () {
     }
 
 
-    async function AssNodeCreation(fromResultObject, markResultObject)
-    {
+    async function AssNodeCreation(fromResultObject, markResultObject) {
         //opret en association i databasen baseret på markeringen
         var resultObject = await CreateAssNode(fromResultObject.element, markResultObject.element.innerText);
         //opret en relation i databaen baseret på hvilken SPEC den er lavet i og hvilken MARK den er lavet i
@@ -394,14 +397,13 @@ $(function () {
 
         //Vælg hvilken ASS-node fra databasen der skal dukke op
         var SPECnodeASSnode = await ChooseAssNode(fromResultObject)
-        
+
 
         CreateOutputBox(SPECnodeASSnode)
     }
 
     //Lav en Associationsnode
-    async function CreateAssNode(fromElement, selectedText)
-    {
+    async function CreateAssNode(fromElement, selectedText) {
         var nodeType = "ASS";
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + $.trim(selectedText) + "/" + nodeType;
         var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
@@ -412,71 +414,64 @@ $(function () {
     //Find ASS-node med flest veje til sig
     async function ChooseAssNode(domElement) {
 
-        
+
         var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/";
         //var nodeType = "ASS";
         //var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + $.trim(markResultObject.element.innerText) + "/" + nodeType +  "/" + fromResultObject.element.id;
 
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
-        
+
         return nodeResult;
     };
-    
-
-  async function FindNodesToAssTo(fromNode)
-  {
-    var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
-  }
-
-  //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
-  async function CreateRelation(fromNodeId, toNodeId, relationType)
-  {
-      var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
-      var nodeResult = await httpGetAsync(apiEndpointUrl);
-      return nodeResult;    
-  }
 
 
-  //Hent ID fra neo4j til den samme tekstfelt som netop er oprettet i UI
-  function SetBoxId(resultObject)
-  {
-    //console.log(resultObject.element);
-    $(resultObject.element).attr("id", resultObject.node.id)
-  }
+    async function FindNodesToAssTo(fromNode) {
+        var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
+    }
+
+    //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
+    async function CreateRelation(fromNodeId, toNodeId, relationType) {
+        var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
+        var nodeResult = await httpGetAsync(apiEndpointUrl);
+        return nodeResult;
+    }
 
 
-  //Åbner ajax-api-xmlhttprequest-xhr
-  function httpGetAsync(theUrl, htmlElement)
-  {
-      return new Promise(function (resolve, reject)
-      {
-          var xmlHttp = new XMLHttpRequest();
-          var element = htmlElement;
-          xmlHttp.onreadystatechange = async function ()
-          {
-              if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-              {
-                console.log("readystate = 4: " + xmlHttp.responseText);
-                var jsonResult = await JSON.parse(xmlHttp.responseText);
-                var resultObject = { node: jsonResult, element: element };
-                resolve(resultObject);
-                return resultObject;
-              }
-              else
-              {
-                console.log("rejected at readystate = " + xmlHttp.readyState);
-                //reject("REJECT");
-              }
-          }
-          xmlHttp.open("GET", theUrl, true); // true for asynchronous
-          xmlHttp.send();
+    //Hent ID fra neo4j til den samme tekstfelt som netop er oprettet i UI
+    function SetBoxId(resultObject) {
+        //console.log(resultObject.element);
+        $(resultObject.element).attr("id", resultObject.node.id)
+        log(resultObject.node.label + "-noden  " + resultObject.node.id + " er tilføjet UI", resultObject.node.label); 
+    }
 
-      })
-  }
 
-  
-  //Send grundnode afsted
-  SendGrundNode()
+    //Åbner ajax-api-xmlhttprequest-xhr
+    function httpGetAsync(theUrl, htmlElement) {
+        return new Promise(function (resolve, reject) {
+            var xmlHttp = new XMLHttpRequest();
+            var element = htmlElement;
+            xmlHttp.onreadystatechange = async function () {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                    console.log("readystate = 4: " + xmlHttp.responseText);
+                    var jsonResult = await JSON.parse(xmlHttp.responseText);
+                    var resultObject = { node: jsonResult, element: element };
+                    resolve(resultObject);
+                    return resultObject;
+                }
+                else {
+                    console.log("rejected at readystate = " + xmlHttp.readyState);
+                    //reject("REJECT");
+                }
+            }
+            xmlHttp.open("GET", theUrl, true); // true for asynchronous
+            xmlHttp.send();
+
+        })
+    }
+
+
+    //Send grundnode afsted
+    SendGrundNode()
 
 
     //Få start- og slutplacering af markering uanset om der er anden html-opmærkning i feltet
@@ -512,7 +507,7 @@ $(function () {
 
     }
 
-  
+
 
     //Find bogstav før markering
     function getCharacterPrecedingSelection(containerEl) {
@@ -557,7 +552,7 @@ $(function () {
         return succeedingChar;
     }
 
-   
+
 
 
 
@@ -566,9 +561,8 @@ $(function () {
         var selectedText = window.getSelection();
         var domElement = event.target;
 
-        if (selectedText.type != "Caret")
-        { 
-            
+        if (selectedText.type != "Caret") {
+
             //Gem teksten før og efter markeringen (skal bruges til at notere morfemgrænser i MARK-noden)
             var precedingChar = getCharacterPrecedingSelection(domElement);
             var succeedingChar = getCharacterSucceedingSelection(domElement)
@@ -579,7 +573,7 @@ $(function () {
             if ((selectedText.toString().trim() != '') && (selectedText.toString().trim() != '.')) {
 
                 //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
-                snapSelectionToWord(selectedText)
+                //snapSelectionToWord(selectedText)
 
                 //Send indholdet, hvis man har glemt at trykke ENTER
                 MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
@@ -587,7 +581,7 @@ $(function () {
 
         }
 
-      
+
 
         return selectedText, domElement;
     }
@@ -595,18 +589,15 @@ $(function () {
 
 
     //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 1 characters tilbare af ordet
-  function snapSelectionToWord(selectedText)
-    {
-        
-        var sel;
+    function snapSelectionToWord(selectedText) {
+
+        var sel
 
         // Check for existence of window.getSelection() and that it has a
         // modify() method. IE 9 has both selection APIs but no modify() method.
-        if (selectedText && (sel = window.getSelection()).modify)
-        {
-          sel = selectedText;
-            if (!sel.isCollapsed)
-            {
+        if (selectedText && (sel = window.getSelection()).modify) {
+            sel = selectedText;
+            if (!sel.isCollapsed) {
 
                 // Detect if selection is backwards
                 var range = document.createRange();
@@ -620,30 +611,24 @@ $(function () {
                     endOffset = sel.focusOffset;
                 //udvid kun til sel.focusNode.nodeValue = Mark.name
                 sel.collapse(sel.anchorNode, sel.anchorOffset);
-                  if (backwards)
-                  {
-                  sel.modify("move", "backward", "character");
-                  sel.modify("move", "forward", "word");
-                  sel.extend(endNode, endOffset);
-                  sel.modify("extend", "forward", "character");
-                  sel.modify("extend", "backward", "word");
-
-                  }
-                  else
-                  {
-                      sel.modify("move", "forward", "character");
-                      sel.modify("move", "backward", "word");
-                      sel.extend(endNode, endOffset);
-                      sel.modify("extend", "backward", "character");
-                      sel.modify("extend", "forward", "word");
-
-                      //kun hvis det ikke er slutningen af teksten
-                      if (sel.baseNode.nextSibling != null) {
-                          //Fjern whitespace fra word
-                          sel.modify("extend", "backward", "character");
-                      }
-                     
-                  }
+                if (backwards) {
+                    sel.modify("move", "backward", "character");
+                    sel.modify("move", "forward", "word");
+                    sel.extend(endNode, endOffset);
+                    sel.modify("extend", "forward", "character");
+                    sel.modify("extend", "backward", "word");
+                    sel.trim()
+                    
+                }
+                else
+                {
+                    sel.modify("move", "forward", "character");
+                    sel.modify("move", "backward", "word");
+                    sel.extend(endNode, endOffset);
+                    sel.modify("extend", "backward", "character");
+                    sel.modify("extend", "forward", "word");                   
+                   
+                }
             }
         }
         else if ((sel = document.selection) && sel.type != "Control")
@@ -661,6 +646,8 @@ $(function () {
                 textRange.select();
             }
         }
+
+     
     }
 
 
@@ -745,7 +732,33 @@ $(function () {
         //console.log("der er mouseup i .greenbox");
     })
 
+    //Funktion til at style consollen
+    function log(besked, farve) {
+        farve = farve || "black";
+        baggrundsfarve = "White";
+        switch (farve) {
+            case "ROOT": farve = "Red"; baggrundsfarve = "Black"; break;
+            case "MARK": farve = "Yellow"; baggrundsfarve = "Black"; break;
+            case "SPEC": farve = "Green"; baggrundsfarve = "Black"; break;
+            case "ASS": farve = "Purple"; baggrundsfarve = "Black"; break;
+            case "success": farve = "Green"; baggrundsfarve = "LimeGreen"; break;
+            case "info": farve = "DodgerBlue"; baggrundsfarve = "Turquoise"; break;
+            case "error": farve = "Red"; baggrundsfarve = "Black"; break;
+            case "start": farve = "OliveDrab"; baggrundsfarve = "PaleGreen"; break;
+            case "warning": farve = "Tomato"; baggrundsfarve = "Black"; break;
+            case "end": farve = "Orchid"; baggrundsfarve = "MediumVioletRed"; break;
+            default: farve = farve;
+        }
 
+        if (typeof besked == "object") {
+            console.log(besked);
+        } else if (typeof farve == "object") {
+            console.log("%c" + besked, "color: PowderBlue;font-weight:bold; background-color: RoyalBlue;");
+            console.log(farve);
+        } else {
+            console.log("%c" + besked, "color:" + farve + ";font-weight:bold; background-color: " + baggrundsfarve + ";");
+        }
+    }
  
 
 
