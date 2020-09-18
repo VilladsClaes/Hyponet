@@ -89,6 +89,7 @@ $(function () {
         //console.log("Uddybningsboks udspringer fra " + "%c" + resultObject.node.name, "color:#f8ca48;");
         var parentElement = document.getElementById(domElement.id);
         DrawSpeechBubble(parentElement, greenBox, resultObject);
+        
         SendSpecNode(resultObject);
     }
 
@@ -189,18 +190,19 @@ $(function () {
             }
 
             //console.log(e.key)
-            if (e.currentTarget.innerText != "") {
-                var searchresults = await SearchNodes(e.currentTarget.innerText);
-                console.log(searchresults)
-            }
-            else {
-                var searchresults = await SearchNodes(e.key);
-                console.log(searchresults)
-            }
+            //if (e.currentTarget.innerText != "") {
+            //    var searchresults = await SearchNodes(e.currentTarget.innerText);
+            //    console.log(searchresults)
+            //}
+            //else {
+            //    var searchresults = await SearchNodes(e.key);
+            //    console.log(searchresults)
+            //}
 
         });
 
         //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
+
         $("p.redbox").mousedown(async function (e) {
             //fjern placeholderteksten
             if ($("p.redbox").text() === "Skriv noget her") {
@@ -227,11 +229,11 @@ $(function () {
     $('body').on("mouseup", "p.redbox", function (e) {
         //Vælg det markerede tekst ved mouseup    
         SelectTextFromWindow(e);
-        console.log("der er mouseup i .redbox")
+        //console.log("der er mouseup i .redbox")
 
         if (e.currentTarget.nextElementSibling != null && e.currentTarget.nextElementSibling.childNodes[1].innerHTML == "") {
             e.currentTarget.nextElementSibling.remove()
-            console.log("tom greenbox fjernet")
+            //console.log("tom greenbox fjernet")
         }
 
     })
@@ -242,6 +244,7 @@ $(function () {
         //Hvis man bruger ENTER eller museklik i et grønt felt som IKKE er tomt, så skal den sende til databasen
         var kunDenEneGang = true;
         $(".greenbox").keypress(async function (e) {
+
             if (e.which == 13 && kunDenEneGang && e.currentTarget.id == "") {
                 //console.log("ENTER i .greenbox")
                 e.preventDefault();
@@ -250,6 +253,7 @@ $(function () {
                 e.currentTarget.removeAttribute("contenteditable")
                 kunDenEneGang = false;
             }
+
         });
 
         $("body").on("mousedown", ".greenbox", async function (e) {
@@ -351,7 +355,7 @@ $(function () {
             var preChar = " ";
         }
         var encodedString = encodeURIComponent($.trim(selectedText));
-        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType + "/" + start + "/" + end + "/" + preChar + "/" + postChar + "/";
+        var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType + "/" + start + "/" + end + "/" + encodeURIComponent(preChar) + "/" + encodeURIComponent(postChar) + "/";
 
        
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
@@ -360,27 +364,36 @@ $(function () {
     }
 
     async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
-        var nodeType = "MARK";
-        log(nodeType + "-noden  " + domElement.id + " er merget", "MARK"); 
-
+        var nodeType = "MARK";      
         var encodedString = encodeURIComponent($.trim(selectedText));
         var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + encodedString + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
         var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+        log(nodeType + "-noden  " + nodeResult.node.id + " er merget", "MARK"); 
         return nodeResult;
     }
 
     async function CreateAssRelationToMark(name, preceedingChar, suceedingChar) {
         var encodedString = encodeURIComponent($.trim(name));
-        var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + encodedString + "/" + preceedingChar + "/" + suceedingChar + "/";
+        var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + encodedString + "/" + encodeURIComponent(preceedingChar) + "/" + encodeURIComponent(suceedingChar) + "/";
         var nodeResult = await httpGetAsync(apiEndpointUrl);
         return nodeResult;
     }
 
 
+    //Vi skal have fundet en måde at slette r i SPEC-[:Ass]->ASS-[r:Ass]->MARK fordi r er lavet automatisk 
+    async function DeleteRelation(fromNodeId, toNodeId, relationType) {
+        var apiEndpointUrl = "https://localhost:44380/Relation/Delete/" + fromNodeId + "/" + toNodeId + "/" + relationType;
+        var nodeResult = await httpGetAsync(apiEndpointUrl);
+        log("Relation fra " + fromNodeId + " til  " + toNodeId + " er nu slettet", relationType);
+        return nodeResult;
+    }
+
     async function SpecNodeCreation(e, markNodeOrigin) {
         var resultObject = await CreateSpecNode(e.currentTarget);
         SetBoxId(resultObject);
         await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+        //Tjek indholdet af denne SPEC og lav automatiske markeringer i den
+        await CreateAutoMark(markNodeOrigin.node.name, markNodeOrigin.node.preChar, markNodeOrigin.node.postChar )
         return resultObject;
     }
 
@@ -389,9 +402,26 @@ $(function () {
         var nodeType = "SPEC";
         var encodedString = encodeURIComponent($.trim(greenBoxElement.innerText));
         var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
-        var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
+        var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);        
         return nodeResult;
     }
+
+
+    async function CreateAutoMark(markname, preChar,postChar) {
+
+        //encode null as string to avoid 404 in httpGet
+        if (postChar == "") {
+            var postChar = " ";
+        }
+        if (preChar == "") {
+            var preChar = " ";
+        }
+        var apiEndpointUrl = "https://localhost:44380/Node/CreateAutoMark/" + encodeURIComponent(markname) + "/"  + encodeURIComponent(preChar) + "/" + encodeURIComponent(postChar) + "/";
+        
+        await httpGetAsync(apiEndpointUrl)
+
+       
+    };
 
 
     async function AssNodeCreation(fromResultObject, markResultObject) {
@@ -432,14 +462,13 @@ $(function () {
     };
 
 
-    async function FindNodesToAssTo(fromNode) {
-        var apiEndPointUrl = "https://localhost:44380/Association/GetNodesToRelateTo/" + fromNode.id
-    }
 
     //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
+    //Når der oprettes en automatisk MARK-noden bliver relationen skabt i samme kald (måske lave det om, så relationen laves her?)
     async function CreateRelation(fromNodeId, toNodeId, relationType) {
         var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
         var nodeResult = await httpGetAsync(apiEndpointUrl);
+        log("fra " + fromNodeId + " til  " + toNodeId + " er tilføjet UI", relationType); 
         return nodeResult;
     }
 
@@ -745,7 +774,7 @@ $(function () {
     //Funktion til at style consollen
     function log(besked, farve) {
         farve = farve || "black";
-        baggrundsfarve = "White";
+        baggrundsfarve = "darkgray";
         switch (farve) {
             case "ROOT": farve = "Red"; baggrundsfarve = "Black"; break;
             case "MARK": farve = "Yellow"; baggrundsfarve = "Black"; break;
