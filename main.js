@@ -410,11 +410,11 @@ $(function () {
     async function CreateAutoMark(markname, preChar,postChar) {
 
         //encode null as string to avoid 404 in httpGet
-        if (postChar == "") {
+        if (postChar == "" || postChar == null) {
             var postChar = " ";
         }
-        if (preChar == "") {
-            var preChar = " ";
+        if (preChar == "" || preChar == null) {
+            var preChar = " "  ;
         }
         var apiEndpointUrl = "https://localhost:44380/Node/CreateAutoMark/" + encodeURIComponent(markname) + "/"  + encodeURIComponent(preChar) + "/" + encodeURIComponent(postChar) + "/";
         
@@ -613,6 +613,8 @@ $(function () {
 
                 //Udvid det valgte indtil næste whitespace/mellemrum eller specialtegn    
                 //snapSelectionToWord(selectedText)
+                var ord = getSurroundingWords(selectedText)
+                console.log(ord)
 
                 //Send indholdet, hvis man har glemt at trykke ENTER
                 MarkNodeCreation(selectedText, domElement, precedingChar, succeedingChar)
@@ -626,6 +628,66 @@ $(function () {
     }
 
 
+    //Denne funktion skal markere ordet foran selection og bagefter selection.
+    function getSurroundingWords(selectedText)
+    {
+
+        console.log(selectedText)
+
+
+
+
+        //________________________TILGANG 1
+        //// get the selection
+        //var sel = window.getSelection();
+        //// get the element in which the selection is made, and the start and end position
+        //var node = sel.anchorNode;
+        //var from = sel.anchorOffset;
+        //// let's see what's before the selection
+        //var textBeforeWord = node.textContent.substring(0, from);
+        //var match = textBeforeWord.match(/(\w+)\s+/);
+        //var previousWord = match[1];
+
+        
+
+         //________________________TILGANG 2
+        ////spring over ordet og marker hele næste
+        //selectedText.modify("move", "forward", "word");
+        //selectedText.modify("extend", "forward", "word");
+        //var nextWord = selectedText.toString();
+        //console.log(nextWord)
+        ////hop tilbage til ordet og marker hele forrige 
+        //selectedText.modify("move", "backward", "word");
+        //selectedText.modify("move", "backward", "word");
+        //selectedText.modify("extend", "backward", "word");
+        //var previousWord = selectedText.toString();
+        //console.log(previousWord)
+        ////hop frem igen og mark
+        //selectedText.modify("move", "forward", "word");
+        //selectedText.modify("extend", "forward", "word");
+
+
+
+
+        //__________________________TILGANG 3
+        var value = $(this).text();
+        var res = value.split(" ");
+
+        var name = res[2];
+        var title = res[3];
+
+        var html = "<div class=\"showLeft\">" + name + "</div> " + " <div class=\"showLeft\">" + title + "</div>";
+
+        $(this).html(html);
+
+        $(".showLeft").on('click', function () {
+            alert($(this).prev().text());
+        })
+
+
+
+        
+    }
 
     //Denne funktion skal forlænge markeringer til nærmeste whitespace hvis der er under 1 characters tilbare af ordet
     function snapSelectionToWord(selectedText) {
@@ -688,6 +750,10 @@ $(function () {
 
      
     }
+
+
+
+
 
 
   //Opret gule mark-opmærkninger
