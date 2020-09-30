@@ -393,7 +393,9 @@ $(function () {
         SetBoxId(resultObject);
         await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
         //Tjek indholdet af denne SPEC og lav automatiske markeringer i den
-        await CreateAutoMark(markNodeOrigin.node.name, markNodeOrigin.node.preChar, markNodeOrigin.node.postChar )
+        await CreateAutoMark(markNodeOrigin.node.name, markNodeOrigin.node.preChar, markNodeOrigin.node.postChar)
+        //Tjek (SPEC)--(MARK)--(SPEC/ASS) for indhold. Brug dette som output 
+        await SeekOutput(resultObject);
         return resultObject;
     }
 
@@ -421,6 +423,18 @@ $(function () {
         await httpGetAsync(apiEndpointUrl)
 
        
+    };
+
+    async function SeekOutput(SpecNode) {
+
+        var apiEndpointUrl = "https://localhost:44380/Node/SeekOutput/" + SpecNode.node.id;
+
+
+        var hvad = await httpGetAsync(apiEndpointUrl)
+        console.log("der blev fundet noget")
+        console.log(hvad)
+
+
     };
 
 
