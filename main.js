@@ -423,7 +423,6 @@ $(function () {
 
     var apiEndpointUrl = "https://localhost:44380/Node/SeekOutput/" + SpecNode.node.id;
 
-
     var hvad = await httpGetAsync(apiEndpointUrl)
     console.log("der blev fundet noget")
     console.log(hvad)
