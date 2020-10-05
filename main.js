@@ -360,13 +360,25 @@ $(function () {
     return nodeResult;
   }
 
-  async function SpecNodeCreation(e, markNodeOrigin) {
-    var resultObject = await CreateSpecNode(e.currentTarget);
-    SetBoxId(resultObject);
-    await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
-    await SeekOutput(resultObject);
-    return resultObject;
-  }
+    async function SpecNodeCreation(e, markNodeOrigin)
+    {
+        var resultObject = await CreateSpecNode(e.currentTarget);
+        SetBoxId(resultObject);
+        await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+        //Find ASS-node at forbinde til        
+        var FromASSToSPEC = await ChooseASStoRelateTo(resultObject.node);
+        await CreateRelation(FromASSToSPEC.fromNodeID, FromASSToSPEC.toNodeID, "Ass");
+        await SeekOutput(resultObject);
+        return resultObject;
+    }
+
+    async function ChooseASStoRelateTo(fromNode) {
+        
+        var apiEndpointUrl = "https://localhost:44380/Node/ChooseASStoRelateTo/" + fromNode.id;
+        var nodeResult = await httpGetAsync(apiEndpointUrl);
+        
+        return nodeResult;
+    }
 
   //Send indhold til neo4j om at oprette en Spec-node
   async function CreateSpecNode(greenBoxElement) {
