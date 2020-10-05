@@ -309,22 +309,6 @@ $(function () {
     await MergeMarkNodes(selectedText, domElement, start, end);
 
 
-    //Lav en automatisk Ass-rel fra ASS til MARK
-    //kræver at MARK.name og MARK.morfem[preceedingChar, suceedingChar] kendes
-    var name = resultObject.node.name;
-
-    var postChar = getCharacterSucceedingSelection(domElement)
-    var preChar = getCharacterPrecedingSelection(domElement)
-
-    //encode null as string to avoid 404 in httpGet
-    if (postChar == "") {
-      var postChar = " ";
-    }
-    if (preChar == "") {
-      var preChar = " ";
-    }
-    await CreateAssRelationToMark(name, preChar, postChar);
-
     CreateGreenBox(domElement, selectionObject);
   }
 
@@ -366,13 +350,7 @@ $(function () {
     return nodeResult;
   }
 
-  async function CreateAssRelationToMark(name, preceedingChar, suceedingChar) {
-    var encodedString = encodeURIComponent($.trim(name));
-    var apiEndpointUrl = "https://localhost:44380/Relation/CreateAssRelationToMark/" + encodedString + "/" + encodeURIComponent(preceedingChar) + "/" + encodeURIComponent(suceedingChar) + "/";
-    var nodeResult = await httpGetAsync(apiEndpointUrl);
-    return nodeResult;
-  }
-
+ 
 
   //Vi skal have fundet en måde at slette r i SPEC-[:Ass]->ASS-[r:Ass]->MARK fordi r er lavet automatisk 
   async function DeleteRelation(fromNodeId, toNodeId, relationType) {
@@ -386,10 +364,7 @@ $(function () {
     var resultObject = await CreateSpecNode(e.currentTarget);
     SetBoxId(resultObject);
     await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
-    //Tjek indholdet af denne SPEC og lav automatiske markeringer i den
-    await CreateAutoMark(markNodeOrigin.node.name, markNodeOrigin.node.preChar, markNodeOrigin.node.postChar)
-    //Tjek (SPEC)--(MARK)--(SPEC/ASS) for indhold. Brug dette som output 
-    var sutMineLog = await SeekOutput(resultObject);
+    await SeekOutput(resultObject);
     return resultObject;
   }
 
@@ -402,22 +377,6 @@ $(function () {
     return nodeResult;
   }
 
-
-  async function CreateAutoMark(markname, preChar, postChar) {
-
-    //encode null as string to avoid 404 in httpGet
-    if (postChar == "" || postChar == null) {
-      var postChar = " ";
-    }
-    if (preChar == "" || preChar == null) {
-      var preChar = " ";
-    }
-    var apiEndpointUrl = "https://localhost:44380/Node/CreateAutoMark/" + encodeURIComponent(markname) + "/" + encodeURIComponent(preChar) + "/" + encodeURIComponent(postChar) + "/";
-
-    await httpGetAsync(apiEndpointUrl)
-
-
-  };
 
   async function SeekOutput(SpecNode) {
 
@@ -460,8 +419,7 @@ $(function () {
 
 
     var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/";
-    //var nodeType = "ASS";
-    //var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + $.trim(markResultObject.element.innerText) + "/" + nodeType +  "/" + fromResultObject.element.id;
+
 
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
 
@@ -471,7 +429,7 @@ $(function () {
 
 
   //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
-  //Når der oprettes en automatisk MARK-noden bliver relationen skabt i samme kald (måske lave det om, så relationen laves her?)
+ 
   async function CreateRelation(fromNodeId, toNodeId, relationType) {
     var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
     var nodeResult = await httpGetAsync(apiEndpointUrl);
