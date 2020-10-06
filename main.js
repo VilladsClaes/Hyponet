@@ -367,7 +367,10 @@ $(function () {
         await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
         //Find ASS-node at forbinde til        
         var FromASSToSPEC = await ChooseASStoRelateTo(resultObject.node);
-        await CreateRelation(FromASSToSPEC.fromNodeID, FromASSToSPEC.toNodeID, "Ass");
+        if (FromASSToSPEC.node.fromNodeID != null && FromASSToSPEC.node.toNodeID != null) {
+            //await CreateRelation(FromASSToSPEC.node.fromNodeID.toString(), FromASSToSPEC.node.toNodeID.toString(), "Ass");
+        }
+       
         await SeekOutput(resultObject);
         return resultObject;
     }
@@ -421,9 +424,10 @@ $(function () {
     var encodedString = encodeURIComponent($.trim(selectedText));
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
 
-    var nodeResult = await httpGetAsync(apiEndpointUrl, fromElement)
-    console.log("der er lavet en ASS-node " + "%c" + nodeResult.node.id, "color:purple;")
-    return nodeResult;
+      var resultObject = await httpGetAsync(apiEndpointUrl, fromElement)
+    log(resultObject.node.label + "-noden  " + resultObject.node.id + " er tilføjet UI", resultObject.node.label);
+ 
+      return resultObject;
   };
 
   //Find ASS-node med flest veje til sig
@@ -475,7 +479,7 @@ $(function () {
           return resultObject;
         }
         if (xmlHttp.readyState == 3) {
-          console.log(xmlHttp.responseText);
+          //console.log(xmlHttp.responseText);
         } else {
           console.log("rejected at readystate = " + xmlHttp.readyState);
           //reject("REJECT");
