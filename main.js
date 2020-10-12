@@ -434,7 +434,7 @@ $(function () {
   async function ChooseAssNode(domElement) {
 
 
-    var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/";
+      var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + domElement.node.id;
 
 
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
