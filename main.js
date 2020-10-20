@@ -365,10 +365,10 @@ $(function () {
         var resultObject = await CreateSpecNode(e.currentTarget);
         SetBoxId(resultObject);
         await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
-        //Find ASS-node at forbinde til        
+        //Find ASS-noder (fromNode) at forbinde til denne SPEC (toNode)        
         var FromASSToSPEC = await ChooseASStoRelateTo(resultObject.node);
-        if (FromASSToSPEC.node.fromNodeID != null && FromASSToSPEC.node.toNodeID != null) {
-            //await CreateRelation(FromASSToSPEC.node.fromNodeID.toString(), FromASSToSPEC.node.toNodeID.toString(), "Ass");
+        if (FromASSToSPEC.node.fromNodeID != null || FromASSToSPEC.node.toNodeID != null) {
+            await CreateRelation(FromASSToSPEC.node.fromNodeID.toString(), FromASSToSPEC.node.toNodeID.toString(), "Ass");
         }
        
         await SeekOutput(resultObject);
@@ -414,8 +414,10 @@ $(function () {
     //Vælg hvilken ASS-node fra databasen der skal dukke op
     var SPECnodeASSnode = await ChooseAssNode(fromResultObject)
 
-
-    CreateOutputBox(SPECnodeASSnode)
+      if (SPECnodeASSnode.node.id) {
+          CreateOutputBox(SPECnodeASSnode)
+      }
+  
   }
 
   //Lav en Associationsnode
@@ -425,6 +427,7 @@ $(function () {
     var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
 
       var resultObject = await httpGetAsync(apiEndpointUrl, fromElement)
+      console.log(nodeType + selectedText)
     log(resultObject.node.label + "-noden  " + resultObject.node.id + " er tilføjet UI", resultObject.node.label);
  
       return resultObject;
@@ -434,7 +437,7 @@ $(function () {
   async function ChooseAssNode(domElement) {
 
 
-      var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + domElement.node.id;
+    var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + domElement.node.id;
 
 
     var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
