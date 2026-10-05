@@ -1,5 +1,14 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+# Visual Studio
+.vs/
+*.suo
+*.user
+bin/
+obj/
 
-/.vs/Hyponet/v16/.suo
+# Node
+node_modules/
+package-lock.json
+
+# Logs / editor artefacts
+*.log
+stale_outputs_checked
