@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 namespace hyponet_api.Controllers
 {
@@ -66,17 +67,22 @@ namespace hyponet_api.Controllers
             var name = form["name"].ToString();
             var type = form["type"].ToString();
 
+            if (!IsValidIdentifier(type))
+            {
+                return "Error: invalid type.";
+            }
+
             var neo4jQuery =
-                $"CREATE (n:{type} {{name:'{name}'}}) SET n.creationTime = timestamp() RETURN n";
+                $"CREATE (n:{type} {{name:$name}}) SET n.creationTime = timestamp() RETURN n";
 
             if (type.ToLower() == "ass")
             //Merge to avoid creating duplicate ass nodes
             {
                 neo4jQuery =
-                    $"MERGE (n:{type} {{name:'{name}'}}) SET n.creationTime = timestamp() RETURN n AS node";
+                    $"MERGE (n:{type} {{name:$name}}) SET n.creationTime = timestamp() RETURN n AS node";
             }
 
-            var statementResultSet = _driver.Session().Run(neo4jQuery);
+            var statementResultSet = _driver.Session().Run(neo4jQuery, new { name });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -98,12 +104,18 @@ namespace hyponet_api.Controllers
             var preceedingChar = form["preceedingChar"].ToString();
             var succeedingChar = form["succeedingChar"].ToString();
 
+            if (!IsValidIdentifier(type) || !int.TryParse(rangeStart, out var start) || !int.TryParse(rangeEnd, out var end))
+            {
+                return "Error: invalid type or range.";
+            }
+
             var neo4jQuery =
-                $"CREATE (n:{type} {{name:'{name}', range:[{rangeStart},{rangeEnd}], morfem:['{preceedingChar}','{succeedingChar}']}}) " +
+                $"CREATE (n:{type} {{name:$name, range:[$rangeStart,$rangeEnd], morfem:[$preceedingChar,$succeedingChar]}}) " +
                 "SET n.creationTime = timestamp() " +
                 "RETURN n";
 
-            var statementResultSet = _driver.Session().Run(neo4jQuery);
+            var statementResultSet = _driver.Session().Run(neo4jQuery,
+                new { name, rangeStart = start, rangeEnd = end, preceedingChar, succeedingChar });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -114,12 +126,17 @@ namespace hyponet_api.Controllers
         {
             var form = Request.Form;
             var fileName = form["fileName"].ToString();
-            var fileType = form["type"];
+            var fileType = form["type"].ToString();
+
+            if (!IsValidIdentifier(fileType))
+            {
+                return "Error: invalid type.";
+            }
 
             var neo4jQuery =
-                $"CREATE (n:{fileType} {{name:'{fileName}'}}) SET n.creationTime = timestamp() RETURN n";
+                $"CREATE (n:{fileType} {{name:$fileName}}) SET n.creationTime = timestamp() RETURN n";
 
-            var statementResultSet = _driver.Session().Run(neo4jQuery);
+            var statementResultSet = _driver.Session().Run(neo4jQuery, new { fileName });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -205,12 +222,17 @@ namespace hyponet_api.Controllers
         public string GetSurroundingWords(string markName, string type, string rangeStart, string rangeEnd,
             string preceedingChar, string succeedingChar)
         {
+            if (!IsValidIdentifier(type))
+            {
+                return "Error: invalid type.";
+            }
+
             var neo4jQuery =
-                $"MATCH (a:{type})-[:Mark]->(m:MARK) WHERE m.name CONTAINS '{markName}' " +
+                $"MATCH (a:{type})-[:Mark]->(m:MARK) WHERE m.name CONTAINS $markName " +
                 "MATCH (a)-[:Mark]->(n:MARK) " +
                 "RETURN n.creationTime, n.name, ID(n), labels(n)";
 
-            var statementResultSet = _driver.Session().Run(neo4jQuery);
+            var statementResultSet = _driver.Session().Run(neo4jQuery, new { markName });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -226,7 +248,7 @@ namespace hyponet_api.Controllers
             if (search == "spørgsmål")
             {
                 neo4jQuery =
-                $"MATCH(m:ROOT)-->(:MARK)-->(n:SPEC) WHERE n.name='{search}' RETURN m AS node, rand() as r " +
+                $"MATCH(m:ROOT)-->(:MARK)-->(n:SPEC) WHERE n.name=$search RETURN m AS node, rand() as r " +
                  "ORDER BY r LIMIT 1";
             } 
             else if (int.TryParse(search, out int nodeid))
@@ -244,7 +266,7 @@ namespace hyponet_api.Controllers
                 //$"MATCH (n:ASS)-[r:Ass]-(m) WHERE toLower('{search}') CONTAINS toLower(n.name) WITH n AS ord, m AS relevante, r AS forbindelser MATCH (relevante)-[forbindelser]-(ord)--() RETURN relevante, count(forbindelser) AS antal ORDER BY antal DESC LIMIT 1";
 
                 //Find en ASS som optræder i det skrevne, og spyt den associerede node ud, som oftest vil være en SPEC eller en ROOT
-                $"MATCH (ass:ASS)-[:Ass]-(m) WHERE  toLower('{search}') " +
+                "MATCH (ass:ASS)-[:Ass]-(m) WHERE  toLower($search) " +
                 $"CONTAINS toLower(' ' + ass.name + ' ') " +
                 $"WITH ass AS soegeresultat, " +
                 $"m AS relevant, " +
@@ -256,7 +278,7 @@ namespace hyponet_api.Controllers
 
             }
 
-            var statementResultSet = _driver.Session().Run(neo4jQuery);
+            var statementResultSet = _driver.Session().Run(neo4jQuery, new { search });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -272,14 +294,21 @@ namespace hyponet_api.Controllers
             var rangeEnd = form["rangeEnd"].ToString();
             var parentId = form["parentId"].ToString();
 
-            var mergeMarkNodesQuery = $"MATCH (m:{type})<-[:Mark]-(n) WHERE ID(n)={parentId} AND m.name = '{name}'" +
-                                      $"MATCH (m) WHERE NOT EXISTS(m.range) OR m.range = [{rangeStart}, {rangeEnd}] " +
+            if (!IsValidIdentifier(type) || !int.TryParse(parentId, out var parent)
+                || !int.TryParse(rangeStart, out var start) || !int.TryParse(rangeEnd, out var end))
+            {
+                return "Error: invalid type, parentId or range.";
+            }
+
+            var mergeMarkNodesQuery = $"MATCH (m:{type})<-[:Mark]-(n) WHERE ID(n)=$parentId AND m.name = $name " +
+                                      "MATCH (m) WHERE NOT EXISTS(m.range) OR m.range = [$rangeStart, $rangeEnd] " +
                                       "WITH m ORDER BY m.creationTime DESC " +
                                       "WITH collect(m) AS marks " +
                                       "CALL apoc.refactor.mergeNodes(marks, { properties: 'override',  mergeRels:true}) YIELD node " +
                                       "RETURN node";
 
-            var statementResultSet = _driver.Session().Run(mergeMarkNodesQuery);
+            var statementResultSet = _driver.Session().Run(mergeMarkNodesQuery,
+                new { name, parentId = parent, rangeStart = start, rangeEnd = end });
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);
 
             return listOfJsonObjects;
@@ -345,6 +374,11 @@ namespace hyponet_api.Controllers
 
             return listOfJsonObjects;
         }
+
+        private static readonly Regex IdentifierPattern = new Regex("^[A-Za-z_][A-Za-z0-9_]*$");
+
+        // Labels and relationship types cannot be Cypher parameters, so they are whitelisted by pattern instead.
+        private static bool IsValidIdentifier(string value) => value != null && IdentifierPattern.IsMatch(value);
 
         private string CreateListOfJsonNodeObjects(IResult statementResultSet)
         {

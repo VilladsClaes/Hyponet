@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -45,21 +46,27 @@ namespace hyponet_api.Controllers
             var relationType = form["relationType"].ToString();
             _logger.Log(LogLevel.Information, $"RelationController.Create() start:  fromNodeId = {fromNodeId} | toNodeId = {toNodeId} | relationType = {relationType}");
 
+            if (!int.TryParse(fromNodeId, out var fromId) || !int.TryParse(toNodeId, out var toId) || !IsValidIdentifier(relationType))
+            {
+                return new List<string> { "Error: invalid fromNodeId, toNodeId or relationType." };
+            }
+
             try
             {
                 var mergeRelationships =
                               $"WITH n,l " +
-                              $"CALL apoc.merge.relationship(n,'{relationType}'" +
+                              "CALL apoc.merge.relationship(n,$relationType" +
                               ",{},{},l,{}) YIELD rel " +
                               "RETURN rel ";
 
                 var neo4jQuery =
-                            $"MATCH(n) WHERE ID(n) = {fromNodeId} " +
-                            $"MATCH(l) WHERE ID(l) = {toNodeId} " +
+                            "MATCH(n) WHERE ID(n) = $fromNodeId " +
+                            "MATCH(l) WHERE ID(l) = $toNodeId " +
                             $"MERGE (n)-[r:{relationType}]->(l) " +
                             mergeRelationships;
 
-                var statementResult = _driver.Session().Run(neo4jQuery);
+                var statementResult = _driver.Session().Run(neo4jQuery,
+                    new { fromNodeId = fromId, toNodeId = toId, relationType });
                 _logger.Log(LogLevel.Information, $"RelationController.Create() ran neo4j query and received statement result");
                 res = statementResult.Select(record => JsonConvert.SerializeObject(record[0].As<IRelationship>(), Formatting.Indented)).ToList();
                 _logger.Log(LogLevel.Information, $"RelationController.Create() retrieved record list from statement result = {res.Count}");
@@ -79,13 +86,18 @@ namespace hyponet_api.Controllers
         {
             var res = new List<string>();
 
+            if (!int.TryParse(fromNodeId, out var fromId) || !int.TryParse(toNodeId, out var toId) || !IsValidIdentifier(relationType))
+            {
+                return new List<string> { "Error: invalid fromNodeId, toNodeId or relationType." };
+            }
+
             try
             {
-                var neo4jQuery = $"MATCH(n) WHERE ID(n) = {fromNodeId} " +
-                                 $"MATCH(l) WHERE ID(l) = {toNodeId} " +
-                                 $"DELETE (n)-[r:{relationType}]->(l) ";
+                var neo4jQuery = $"MATCH (n)-[r:{relationType}]->(l) " +
+                                 "WHERE ID(n) = $fromNodeId AND ID(l) = $toNodeId " +
+                                 "DELETE r";
 
-                var statementResult = _driver.Session().Run(neo4jQuery);
+                var statementResult = _driver.Session().Run(neo4jQuery, new { fromNodeId = fromId, toNodeId = toId });
                 var stringBuilder = new StringBuilder();
                 res = statementResult.Select(record => record[0].As<string>()).ToList();
             }
@@ -96,6 +108,11 @@ namespace hyponet_api.Controllers
 
             return res;
         }
+
+        private static readonly Regex IdentifierPattern = new Regex("^[A-Za-z_][A-Za-z0-9_]*$");
+
+        // Labels and relationship types cannot be Cypher parameters, so they are whitelisted by pattern instead.
+        private static bool IsValidIdentifier(string value) => value != null && IdentifierPattern.IsMatch(value);
 
         public void Dispose()
         {
