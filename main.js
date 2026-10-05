@@ -59,20 +59,13 @@ $(function () {
     $(redBox).attr("contenteditable", "true");
     $(redBox).addClass("redbox")
 
-    //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
-    if (document.getElementsByClassName("redbox")[0] = undefined) {
-      //console.log("der er ingen redboxes i vindues")
-      let newConversation = document.createElement("div");
-      newConversation.attr("id", "conversation");
-      newConversation.attr("class", "container-fluid");
-      document.getElementById("NyGrundNodeKnap").append(newConversation)
-    } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
+    if (e.currentTarget.id == "NyGrundNodeKnap") {
+      $("#samtale").prepend(redBox);
+    } else {
       $(redBox).insertBefore(e.currentTarget);
-      SendGrundNode()
-    } else if (e.currentTarget.id == "NyGrundNodeKnap") {
-      $("#conversation").prepend(redBox);
-      SendGrundNode()
     }
+    SendGrundNode(redBox);
+    redBox.focus();
   }
 
 
@@ -162,12 +155,12 @@ $(function () {
 
   }
 
-  function SendGrundNode() {
+  //Bind ENTER/museklik til en rød boks (eller dem alle ved sidens start)
+  function SendGrundNode(redBox) {
     var kunDenEneGang = true;
+    var boxes = $(redBox || "p.redbox");
 
-
-
-    $("p.redbox").keypress(async function (e) {
+    boxes.keypress(async function (e) {
 
 
 
@@ -198,13 +191,14 @@ $(function () {
 
     //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
 
-    $("p.redbox").mousedown(async function (e) {
+    boxes.mousedown(async function (e) {
       //fjern placeholderteksten
-      if ($("p.redbox").text() === "Skriv noget her") {
-        $("p.redbox").text("")
+      var box = $(e.currentTarget);
+      if (box.text() === "Skriv noget her") {
+        box.text("")
         //console.log("Placeholder Fjernet ")
-      } else if ($("p.redbox").text() === "Skriv noget nyt...") {
-        $("p.redbox").text("")
+      } else if (box.text() === "Skriv noget nyt...") {
+        box.text("")
         //console.log("Placeholder Fjernet igen")
       }
 
@@ -265,27 +259,19 @@ $(function () {
   async function RootNodeCreation(e) {
     var rootNodeResult = await CreateRootNode(e);
     SetBoxId(rootNodeResult);
+    await RelateToAssociations(rootNodeResult.node);
   }
 
   //Søg efter andre noder
   async function SearchNodes(searchChars) {
-
-    var encodedString = encodeURIComponent(searchChars);
-
-    var apiEndpointUrl = "https://localhost:44380/Node/SearchNodes/" + encodedString;
-    var SearchResult = await httpGetAsync(apiEndpointUrl);
-    return SearchResult;
+    return await apiRequest("POST", "Node/FindNode", { search: searchChars });
   };
 
 
 
   //Send indhold til neo4j om at oprette en grundnode
   async function CreateRootNode(e) {
-    var nodeType = "ROOT";
-    var encodedString = encodeURIComponent(e.target.innerText);
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, e.currentTarget);
-    return nodeResult;
+    return await apiRequest("POST", "Node/Create", { name: e.target.innerText, type: "ROOT" }, e.currentTarget);
   };
 
 
@@ -315,94 +301,73 @@ $(function () {
 
   //Send indhold til neo4j om at oprette en marknode
   async function CreateMarkNode(selectedText, domElement) {
-
-
     var nodeType = "MARK";
     var selOffsets = getSelectionCharacterOffsetWithin(domElement)
-    var start = selOffsets.start;
-    var end = selOffsets.end;
-
     var postChar = getCharacterSucceedingSelection(domElement)
     var preChar = getCharacterPrecedingSelection(domElement)
 
-    //encode null as string to avoid 404 in httpGet
+    //Tekstens start/slut tæller som mellemrum, så morfem-sammenligningen i FindAssToRelateTo virker
     if (postChar == "") {
-      var postChar = " ";
+      postChar = " ";
     }
     if (preChar == "") {
-      var preChar = " ";
+      preChar = " ";
     }
-    var encodedString = encodeURIComponent($.trim(selectedText));
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType + "/" + start + "/" + end + "/" + encodeURIComponent(preChar) + "/" + encodeURIComponent(postChar) + "/";
 
-
-    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
-
-    return nodeResult;
+    return await apiRequest("POST", "Node/CreateMarkNode", {
+      name: $.trim(selectedText),
+      type: nodeType,
+      rangeStart: selOffsets.start,
+      rangeEnd: selOffsets.end,
+      preceedingChar: preChar,
+      succeedingChar: postChar
+    }, domElement);
   }
 
   async function MergeMarkNodes(selectedText, domElement, selectionStart, selectionEnd) {
     var nodeType = "MARK";
-    var encodedString = encodeURIComponent($.trim(selectedText));
-    var apiEndpointUrl = "https://localhost:44380/Node/MergeMarkNodes/" + encodedString + "/" + nodeType + "/" + selectionStart + "/" + selectionEnd + "/" + domElement.id;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement);
+    var nodeResult = await apiRequest("POST", "Node/MergeMarkNodes", {
+      name: $.trim(selectedText),
+      type: nodeType,
+      parentId: domElement.id,
+      rangeStart: selectionStart,
+      rangeEnd: selectionEnd
+    }, domElement);
     log(nodeType + "-noden  " + nodeResult.node.id + " er merget", "MARK");
     return nodeResult;
   }
 
- 
+
 
   //Vi skal have fundet en måde at slette r i SPEC-[:Ass]->ASS-[r:Ass]->MARK fordi r er lavet automatisk 
   async function DeleteRelation(fromNodeId, toNodeId, relationType) {
-    var apiEndpointUrl = "https://localhost:44380/Relation/Delete/" + fromNodeId + "/" + toNodeId + "/" + relationType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl);
+    var nodeResult = await apiRequest("GET", "Relation/Delete/" + encodeURIComponent(fromNodeId) + "/" +
+      encodeURIComponent(toNodeId) + "/" + encodeURIComponent(relationType));
     log("Relation fra " + fromNodeId + " til  " + toNodeId + " er nu slettet", relationType);
     return nodeResult;
   }
 
-    async function SpecNodeCreation(e, markNodeOrigin)
-    {
-        var resultObject = await CreateSpecNode(e.currentTarget);
-        SetBoxId(resultObject);
-        await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
-        //Find ASS-noder (fromNode) at forbinde til denne SPEC (toNode)        
-        var FromASSToSPEC = await ChooseASStoRelateTo(resultObject.node);
-        if (FromASSToSPEC.node.fromNodeID != null || FromASSToSPEC.node.toNodeID != null) {
-            await CreateRelation(FromASSToSPEC.node.fromNodeID.toString(), FromASSToSPEC.node.toNodeID.toString(), "Ass");
-        }
-       
-        await SeekOutput(resultObject);
-        return resultObject;
-    }
+  async function SpecNodeCreation(e, markNodeOrigin) {
+    var resultObject = await CreateSpecNode(e.currentTarget);
+    SetBoxId(resultObject);
+    await CreateRelation(markNodeOrigin.node.id, resultObject.node.id, "Spec");
+    await RelateToAssociations(resultObject.node);
+    return resultObject;
+  }
 
-    async function ChooseASStoRelateTo(fromNode) {
-        
-        var apiEndpointUrl = "https://localhost:44380/Node/ChooseASStoRelateTo/" + fromNode.id;
-        var nodeResult = await httpGetAsync(apiEndpointUrl);
-        
-        return nodeResult;
+  //Find ASS-noder hvis markering (inkl. morfem) indgår i nodens tekst, og forbind noden til dem alle
+  async function RelateToAssociations(node) {
+    var result = await apiRequest("POST", "Node/FindAssToRelateTo", { id: node.id });
+    for (const assNode of result.nodes) {
+      await CreateRelation(node.id, assNode.id, "Ass");
     }
+    return result;
+  }
 
   //Send indhold til neo4j om at oprette en Spec-node
   async function CreateSpecNode(greenBoxElement) {
-    var nodeType = "SPEC";
-    var encodedString = encodeURIComponent($.trim(greenBoxElement.innerText));
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl, greenBoxElement);
-    return nodeResult;
+    return await apiRequest("POST", "Node/Create", { name: $.trim(greenBoxElement.innerText), type: "SPEC" }, greenBoxElement);
   }
-
-
-  async function SeekOutput(SpecNode) {
-
-    var apiEndpointUrl = "https://localhost:44380/Node/SeekOutput/" + SpecNode.node.id;
-
-    var hvad = await httpGetAsync(apiEndpointUrl)
-    console.log("der blev fundet noget")
-    console.log(hvad)
-
-
-  };
 
 
   async function AssNodeCreation(fromResultObject, markResultObject) {
@@ -411,47 +376,36 @@ $(function () {
     //opret en relation i databaen baseret på hvilken SPEC den er lavet i og hvilken MARK den er lavet i
     await CreateRelation(fromResultObject.node.id, resultObject.node.id, "Ass");
 
-    //Vælg hvilken ASS-node fra databasen der skal dukke op
-    var SPECnodeASSnode = await ChooseAssNode(fromResultObject)
-
-      if (SPECnodeASSnode.node.id) {
-          CreateOutputBox(SPECnodeASSnode)
-      }
-  
+    //Vælg hvilken tekst (en anden SPEC med samme association) der skal dukke op
+    var outputNode = await ChooseOutputNode(fromResultObject);
+    if (outputNode.node.id) {
+      CreateOutputBox(outputNode);
+    }
   }
 
   //Lav en Associationsnode
   async function CreateAssNode(fromElement, selectedText) {
     var nodeType = "ASS";
-    var encodedString = encodeURIComponent($.trim(selectedText));
-    var apiEndpointUrl = "https://localhost:44380/Node/Create/" + encodedString + "/" + nodeType;
-
-      var resultObject = await httpGetAsync(apiEndpointUrl, fromElement)
-      console.log(nodeType + selectedText)
+    var resultObject = await apiRequest("POST", "Node/Create", { name: $.trim(selectedText), type: nodeType }, fromElement);
     log(resultObject.node.label + "-noden  " + resultObject.node.id + " er tilføjet UI", resultObject.node.label);
- 
-      return resultObject;
+    return resultObject;
   };
 
-  //Find ASS-node med flest veje til sig
-  async function ChooseAssNode(domElement) {
-
-
-    var apiEndpointUrl = "https://localhost:44380/Node/ChooseAssNode/" + domElement.node.id;
-
-
-    var nodeResult = await httpGetAsync(apiEndpointUrl, domElement)
-
-    return nodeResult;
+  //Find SPEC-noder der deler en ASS-node med denne SPEC
+  async function ChooseOutputNode(specResultObject) {
+    return await apiRequest("GET", "Node/ChooseOutputNode/" + encodeURIComponent(specResultObject.node.id), null, specResultObject);
   };
 
 
 
   //fromNodeId når der skal laves ASS pga en uddybning er næsten altid SPEC og selvfølgelig er toNodeId en ASS og typen er Ass
- 
+
   async function CreateRelation(fromNodeId, toNodeId, relationType) {
-    var apiEndpointUrl = "https://localhost:44380/Relation/Create/" + fromNodeId + "/" + toNodeId + "/" + relationType;
-    var nodeResult = await httpGetAsync(apiEndpointUrl);
+    var nodeResult = await apiRequest("POST", "Relation/Create", {
+      fromNodeId: fromNodeId,
+      toNodeId: toNodeId,
+      relationType: relationType
+    });
     log("fra " + fromNodeId + " til  " + toNodeId + " er tilføjet UI", relationType);
     return nodeResult;
   }
@@ -465,33 +419,43 @@ $(function () {
   }
 
 
-  //Åbner ajax-api-xmlhttprequest-xhr
-  function httpGetAsync(theUrl, htmlElement) {
-    return new Promise(function (resolve, reject) {
-      var xmlHttp = new XMLHttpRequest();
-      var element = htmlElement;
-      xmlHttp.onreadystatechange = async function () {
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-          console.log("readystate = 4: " + xmlHttp.responseText);
-          var jsonResult = await JSON.parse(xmlHttp.responseText);
-          var resultObject = {
-            node: jsonResult,
-            element: element
-          };
-          resolve(resultObject);
-          return resultObject;
-        }
-        if (xmlHttp.readyState == 3) {
-          //console.log(xmlHttp.responseText);
-        } else {
-          console.log("rejected at readystate = " + xmlHttp.readyState);
-          //reject("REJECT");
+  //hyponet_api-adressen kan overskrives med ?api=..., fx http://localhost:8080/?api=http://localhost:5080
+  var apiBaseUrl = new URLSearchParams(window.location.search).get("api") || "https://localhost:44380";
+
+  //Kald hyponet_api. resultObject.node er den første node i svaret, resultObject.nodes er dem alle
+  function apiRequest(method, path, formData, htmlElement) {
+    return $.ajax({
+      url: apiBaseUrl + "/" + path,
+      method: method,
+      data: formData || undefined
+    }).then(function (response) {
+      var list = response;
+      if (typeof response === "string") {
+        try {
+          list = JSON.parse(response);
+        } catch (err) {
+          console.error(path + ": " + response);
+          list = [];
         }
       }
-      xmlHttp.open("GET", theUrl, true); // true for asynchronous
-      xmlHttp.send();
+      var nodes = Array.isArray(list) ? list.map(ToNode).filter(function (n) { return n.id != null; }) : [];
+      return { node: nodes[0] || {}, nodes: nodes, element: htmlElement };
+    });
+  }
 
-    })
+  //Oversæt backendens node-JSON (nodeId, nodeName, nodeLabel ...) til id, name, label
+  function ToNode(n) {
+    if (!n || typeof n !== "object" || n.nodeId === "<|no id|>") {
+      return {};
+    }
+    return {
+      id: n.nodeId,
+      name: n.nodeName,
+      label: n.nodeLabel,
+      creationTime: n.creationTime,
+      rangeStart: n.rangeStart,
+      rangeEnd: n.rangeEnd
+    };
   }
 
 
