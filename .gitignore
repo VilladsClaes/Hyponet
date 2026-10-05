@@ -1,0 +1,14 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+bin/
+obj/
+
+# Node
+node_modules/
+package-lock.json
+
+# Logs / editor artefacts
+*.log
+stale_outputs_checked
