@@ -1,6 +1,8 @@
 ﻿using hyponet_api.Interfaces;
 using hyponet_api.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Neo4j.Driver;
 using Newtonsoft.Json;
 using System;
@@ -22,9 +24,11 @@ namespace hyponet_api.Controllers
     public class NodeController : ControllerBase
     {
         private readonly IDriver _driver;
+        private readonly IWebHostEnvironment _environment;
 
-        public NodeController(INeo4jDriverOptions neo4jDriverCredentials)
+        public NodeController(INeo4jDriverOptions neo4jDriverCredentials, IWebHostEnvironment environment)
         {
+            _environment = environment;
             _driver = GraphDatabase.Driver(
                 neo4jDriverCredentials.Uri,
                 AuthTokens.Basic(neo4jDriverCredentials.User,
@@ -327,6 +331,10 @@ namespace hyponet_api.Controllers
 
             if (scope.ToLower() == "all")
             {
+                if (!_environment.IsDevelopment())
+                {
+                    return "Error: scope=all is only allowed in Development.";
+                }
                 neo4jQuery = "MATCH(n) DETACH DELETE n";
             }
             if (nodeId > 0)
@@ -334,6 +342,10 @@ namespace hyponet_api.Controllers
                 neo4jQuery =
                $"MATCH(n) WHERE ID(n)={nodeId} " +
                 "DETACH DELETE(n)";
+            }
+            if (neo4jQuery == "")
+            {
+                return "Error: scope must be a node id or 'all'.";
             }
             var statementResultSet = _driver.Session().Run(neo4jQuery);
             var listOfJsonObjects = CreateListOfJsonNodeObjects(statementResultSet);

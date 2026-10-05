@@ -36,7 +36,7 @@ namespace hyponet_api
                 options.AddDefaultPolicy(
                     builder =>
                     {
-                        builder.WithOrigins("http://localhost:50255", "http://localhost:50546", "https://localhost:44380", "https://villadsclaes.dk", "https://api.villadsclaes.dk", "https://villadsclaes.dk/", "*").AllowAnyHeader().AllowAnyMethod();
+                        builder.WithOrigins("http://localhost:50255", "http://localhost:50546", "https://localhost:44380", "https://villadsclaes.dk", "https://api.villadsclaes.dk", "https://villadsclaes.dk/", "http://localhost:8080").AllowAnyHeader().AllowAnyMethod();
                        
                     });
                

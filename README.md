@@ -16,9 +16,11 @@ Hyponet er alting:
 UI'et er HTML + jQuery i roden af repoet. Der er ingen logik i js-filen – alle noder og relationer oprettes i neo4j via
 backenden `hyponet_api` (ASP.NET Core / .NET 6) i mappen `api/`. UI'et kalder den på `https://localhost:44380` (se `main.js`).
 
-> NB: `main.js` er fra 2020 og bruger de gamle GET-endpoints (`Node/Create/{name}/{type}` osv.). Backenden i `api/`
-> bruger POST med formdata (`Node/Create`, `Node/CreateMarkNode`, `Node/FindAssToRelateTo` …), så de to passer
-> endnu ikke sammen.
+Adressen kan overskrives med `?api=`, fx `http://localhost:8080/?api=http://localhost:5080`.
+
+Endpoints som `main.js` bruger: `Node/Create`, `Node/CreateMarkNode`, `Node/MergeMarkNodes`, `Node/FindAssToRelateTo`,
+`Node/ChooseOutputNode/{id}`, `Node/FindNode` og `Relation/Create` (POST med formdata, undtagen `ChooseOutputNode`).
+`Node/Delete` med `scope=all` er kun tilladt når backenden kører i Development.
 
 | UI-element         | Node i neo4j |
 |--------------------|--------------|
