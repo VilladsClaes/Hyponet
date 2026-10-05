@@ -59,20 +59,13 @@ $(function () {
     $(redBox).attr("contenteditable", "true");
     $(redBox).addClass("redbox")
 
-    //Hvis der ikke findes nogen redboxes allerede (fordi alt i dommen er slettet)
-    if (document.getElementsByClassName("redbox")[0] = undefined) {
-      //console.log("der er ingen redboxes i vindues")
-      let newConversation = document.createElement("div");
-      newConversation.attr("id", "conversation");
-      newConversation.attr("class", "container-fluid");
-      document.getElementById("NyGrundNodeKnap").append(newConversation)
-    } else if ($("p.redbox").innerText != "" && e.currentTarget.id != "NyGrundNodeKnap") {
+    if (e.currentTarget.id == "NyGrundNodeKnap") {
+      $("#samtale").prepend(redBox);
+    } else {
       $(redBox).insertBefore(e.currentTarget);
-      SendGrundNode()
-    } else if (e.currentTarget.id == "NyGrundNodeKnap") {
-      $("#conversation").prepend(redBox);
-      SendGrundNode()
     }
+    SendGrundNode(redBox);
+    redBox.focus();
   }
 
 
@@ -162,12 +155,12 @@ $(function () {
 
   }
 
-  function SendGrundNode() {
+  //Bind ENTER/museklik til en rød boks (eller dem alle ved sidens start)
+  function SendGrundNode(redBox) {
     var kunDenEneGang = true;
+    var boxes = $(redBox || "p.redbox");
 
-
-
-    $("p.redbox").keypress(async function (e) {
+    boxes.keypress(async function (e) {
 
 
 
@@ -198,13 +191,14 @@ $(function () {
 
     //Når man klikker i grundnodeboksen skal eksempelteksten ryddes
 
-    $("p.redbox").mousedown(async function (e) {
+    boxes.mousedown(async function (e) {
       //fjern placeholderteksten
-      if ($("p.redbox").text() === "Skriv noget her") {
-        $("p.redbox").text("")
+      var box = $(e.currentTarget);
+      if (box.text() === "Skriv noget her") {
+        box.text("")
         //console.log("Placeholder Fjernet ")
-      } else if ($("p.redbox").text() === "Skriv noget nyt...") {
-        $("p.redbox").text("")
+      } else if (box.text() === "Skriv noget nyt...") {
+        box.text("")
         //console.log("Placeholder Fjernet igen")
       }
 
